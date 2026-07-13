@@ -1,74 +1,516 @@
-from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
-import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
-from datetime import datetime, timezone
-
+import os
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends, Response
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from typing import List, Optional
+from datetime import datetime, timezone, timedelta
+from bson import ObjectId
+import uuid
+import logging
+import bcrypt
+import jwt
+import re
+
+# ------------------------------------------------------------------ DB
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+JWT_SECRET = os.environ['JWT_SECRET']
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_HOURS = 12
 
-# Create a router with the /api prefix
+app = FastAPI(title="STMP Agri API")
 api_router = APIRouter(prefix="/api")
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("stmp")
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# ------------------------------------------------------------------ helpers
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+def new_id() -> str:
+    return str(uuid.uuid4())
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+def slugify(text: str) -> str:
+    text = (text or "").lower().strip()
+    text = re.sub(r"[àâä]", "a", text)
+    text = re.sub(r"[éèêë]", "e", text)
+    text = re.sub(r"[îï]", "i", text)
+    text = re.sub(r"[ôö]", "o", text)
+    text = re.sub(r"[ùûü]", "u", text)
+    text = re.sub(r"[ç]", "c", text)
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    return text.strip("-") or new_id()[:8]
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
 
-# Include the router in the main app
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_HOURS),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+async def get_current_user(request: Request) -> dict:
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Type de jeton invalide")
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+        user["id"] = str(user["_id"])
+        user.pop("_id", None)
+        user.pop("password_hash", None)
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Session expirée")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Jeton invalide")
+
+def clean(doc: dict) -> dict:
+    doc.pop("_id", None)
+    return doc
+
+# ------------------------------------------------------------------ Models
+class LoginInput(BaseModel):
+    email: EmailStr
+    password: str
+
+class Product(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    name: str
+    category: str            # engrais | fertilisants | herbicides | insecticides | fongicides | equipements
+    subcategory: Optional[str] = None
+    description: str = ""
+    characteristics: List[str] = []
+    applications: List[str] = []
+    image: str = ""
+    featured: bool = False
+    order: int = 0
+    created_at: str = Field(default_factory=now_iso)
+
+class ProductInput(BaseModel):
+    name: str
+    category: str
+    subcategory: Optional[str] = None
+    description: str = ""
+    characteristics: List[str] = []
+    applications: List[str] = []
+    image: str = ""
+    featured: bool = False
+    order: int = 0
+
+class Article(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    title: str
+    slug: str = ""
+    excerpt: str = ""
+    content: str = ""
+    category: str = "conseils"
+    image: str = ""
+    author: str = "STMP Agri"
+    published: bool = True
+    created_at: str = Field(default_factory=now_iso)
+
+class ArticleInput(BaseModel):
+    title: str
+    excerpt: str = ""
+    content: str = ""
+    category: str = "conseils"
+    image: str = ""
+    author: str = "STMP Agri"
+    published: bool = True
+
+class Realisation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    title: str
+    description: str = ""
+    category: str = "logistique"
+    image: str = ""
+    location: Optional[str] = None
+    year: Optional[str] = None
+    order: int = 0
+    created_at: str = Field(default_factory=now_iso)
+
+class RealisationInput(BaseModel):
+    title: str
+    description: str = ""
+    category: str = "logistique"
+    image: str = ""
+    location: Optional[str] = None
+    year: Optional[str] = None
+    order: int = 0
+
+class Partner(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    name: str
+    logo: str = ""
+    type: str = "partenaire"
+    order: int = 0
+
+class PartnerInput(BaseModel):
+    name: str
+    logo: str = ""
+    type: str = "partenaire"
+    order: int = 0
+
+class Certification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    title: str
+    issuer: str = ""
+    description: str = ""
+    year: str = ""
+    pdf_url: Optional[str] = None
+    order: int = 0
+
+class CertificationInput(BaseModel):
+    title: str
+    issuer: str = ""
+    description: str = ""
+    year: str = ""
+    pdf_url: Optional[str] = None
+    order: int = 0
+
+class ContactInput(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = ""
+    subject: str = ""
+    message: str
+
+class QuoteInput(BaseModel):
+    nom: str
+    prenom: str = ""
+    societe: Optional[str] = ""
+    fonction: Optional[str] = ""
+    telephone: str
+    email: EmailStr
+    secteur: str = ""
+    objets: List[str] = []
+    details: str = ""
+    quantite: Optional[str] = ""
+    pays: Optional[str] = ""
+    ville: Optional[str] = ""
+    adresse: Optional[str] = ""
+    date_souhaitee: Optional[str] = None
+    consent: bool = False
+
+class NewsletterInput(BaseModel):
+    email: EmailStr
+
+# ------------------------------------------------------------------ Auth routes
+@api_router.post("/auth/login")
+async def login(payload: LoginInput, response: Response):
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+    uid = str(user["_id"])
+    token = create_access_token(uid, email)
+    response.set_cookie(key="access_token", value=token, httponly=True, secure=False,
+                        samesite="lax", max_age=ACCESS_TOKEN_HOURS * 3600, path="/")
+    return {"access_token": token, "token_type": "bearer",
+            "user": {"id": uid, "email": email, "name": user.get("name", "Admin"), "role": user.get("role", "admin")}}
+
+@api_router.get("/auth/me")
+async def me(user: dict = Depends(get_current_user)):
+    return user
+
+@api_router.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token", path="/")
+    return {"message": "Déconnecté"}
+
+# ------------------------------------------------------------------ Public content routes
+@api_router.get("/products", response_model=List[Product])
+async def list_products(category: Optional[str] = None, search: Optional[str] = None):
+    q: dict = {}
+    if category and category != "all":
+        q["category"] = category
+    if search:
+        q["$or"] = [{"name": {"$regex": search, "$options": "i"}},
+                    {"description": {"$regex": search, "$options": "i"}}]
+    docs = await db.products.find(q, {"_id": 0}).sort("order", 1).to_list(500)
+    return docs
+
+@api_router.get("/products/{product_id}", response_model=Product)
+async def get_product(product_id: str):
+    doc = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Produit introuvable")
+    return doc
+
+@api_router.get("/articles", response_model=List[Article])
+async def list_articles(category: Optional[str] = None):
+    q: dict = {"published": True}
+    if category and category != "all":
+        q["category"] = category
+    docs = await db.articles.find(q, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return docs
+
+@api_router.get("/articles/{slug}", response_model=Article)
+async def get_article(slug: str):
+    doc = await db.articles.find_one({"slug": slug}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Article introuvable")
+    return doc
+
+@api_router.get("/realisations", response_model=List[Realisation])
+async def list_realisations():
+    return await db.realisations.find({}, {"_id": 0}).sort("order", 1).to_list(200)
+
+@api_router.get("/partners", response_model=List[Partner])
+async def list_partners():
+    return await db.partners.find({}, {"_id": 0}).sort("order", 1).to_list(200)
+
+@api_router.get("/certifications", response_model=List[Certification])
+async def list_certifications():
+    return await db.certifications.find({}, {"_id": 0}).sort("order", 1).to_list(200)
+
+@api_router.get("/search")
+async def global_search(q: str = ""):
+    if not q or len(q) < 2:
+        return {"products": [], "articles": []}
+    rx = {"$regex": q, "$options": "i"}
+    products = await db.products.find(
+        {"$or": [{"name": rx}, {"description": rx}]}, {"_id": 0}).to_list(20)
+    articles = await db.articles.find(
+        {"published": True, "$or": [{"title": rx}, {"excerpt": rx}]}, {"_id": 0}).to_list(20)
+    return {"products": products, "articles": articles}
+
+@api_router.get("/stats")
+async def public_stats():
+    stats = await db.site_stats.find_one({"_id": "singleton"})
+    if not stats:
+        return {"partners": 45, "countries": 12, "clients": 350, "years": 10}
+    return {k: v for k, v in stats.items() if k != "_id"}
+
+# ------------------------------------------------------------------ Public submissions
+@api_router.post("/contact")
+async def create_contact(payload: ContactInput):
+    doc = payload.model_dump()
+    doc.update({"id": new_id(), "created_at": now_iso(), "read": False})
+    await db.contacts.insert_one(doc)
+    return {"message": "Votre message a bien été envoyé. Nous vous répondrons rapidement."}
+
+@api_router.post("/quote")
+async def create_quote(payload: QuoteInput):
+    if not payload.consent:
+        raise HTTPException(status_code=400, detail="Vous devez accepter le traitement de vos données.")
+    doc = payload.model_dump()
+    doc.update({"id": new_id(), "created_at": now_iso(), "status": "nouveau"})
+    await db.quotes.insert_one(doc)
+    return {"message": "Merci pour votre demande de devis. Votre dossier a bien été reçu. "
+                       "Un conseiller STMP Agri vous contactera dans les plus brefs délais "
+                       "afin de vous proposer une offre adaptée à vos besoins."}
+
+@api_router.post("/newsletter")
+async def subscribe_newsletter(payload: NewsletterInput):
+    email = payload.email.lower().strip()
+    existing = await db.newsletter.find_one({"email": email})
+    if existing:
+        return {"message": "Vous êtes déjà inscrit à notre newsletter."}
+    await db.newsletter.insert_one({"id": new_id(), "email": email, "created_at": now_iso()})
+    return {"message": "Merci ! Votre inscription à la newsletter est confirmée."}
+
+# ------------------------------------------------------------------ Admin - dashboard stats
+@api_router.get("/admin/overview")
+async def admin_overview(user: dict = Depends(get_current_user)):
+    return {
+        "products": await db.products.count_documents({}),
+        "articles": await db.articles.count_documents({}),
+        "realisations": await db.realisations.count_documents({}),
+        "partners": await db.partners.count_documents({}),
+        "certifications": await db.certifications.count_documents({}),
+        "contacts": await db.contacts.count_documents({}),
+        "contacts_unread": await db.contacts.count_documents({"read": False}),
+        "quotes": await db.quotes.count_documents({}),
+        "quotes_new": await db.quotes.count_documents({"status": "nouveau"}),
+        "newsletter": await db.newsletter.count_documents({}),
+    }
+
+# ------------------------------------------------------------------ Admin - Products
+@api_router.post("/admin/products", response_model=Product)
+async def create_product(payload: ProductInput, user: dict = Depends(get_current_user)):
+    product = Product(**payload.model_dump())
+    await db.products.insert_one(product.model_dump())
+    return product
+
+@api_router.put("/admin/products/{product_id}", response_model=Product)
+async def update_product(product_id: str, payload: ProductInput, user: dict = Depends(get_current_user)):
+    res = await db.products.find_one_and_update(
+        {"id": product_id}, {"$set": payload.model_dump()}, return_document=True)
+    if not res:
+        raise HTTPException(status_code=404, detail="Produit introuvable")
+    return clean(res)
+
+@api_router.delete("/admin/products/{product_id}")
+async def delete_product(product_id: str, user: dict = Depends(get_current_user)):
+    await db.products.delete_one({"id": product_id})
+    return {"message": "Produit supprimé"}
+
+# ------------------------------------------------------------------ Admin - Articles
+@api_router.get("/admin/articles", response_model=List[Article])
+async def admin_list_articles(user: dict = Depends(get_current_user)):
+    return await db.articles.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@api_router.post("/admin/articles", response_model=Article)
+async def create_article(payload: ArticleInput, user: dict = Depends(get_current_user)):
+    data = payload.model_dump()
+    slug = slugify(data["title"])
+    if await db.articles.find_one({"slug": slug}):
+        slug = f"{slug}-{new_id()[:6]}"
+    article = Article(**data, slug=slug)
+    await db.articles.insert_one(article.model_dump())
+    return article
+
+@api_router.put("/admin/articles/{article_id}", response_model=Article)
+async def update_article(article_id: str, payload: ArticleInput, user: dict = Depends(get_current_user)):
+    existing = await db.articles.find_one({"id": article_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Article introuvable")
+    data = payload.model_dump()
+    if data["title"] != existing.get("title"):
+        slug = slugify(data["title"])
+        if await db.articles.find_one({"slug": slug, "id": {"$ne": article_id}}):
+            slug = f"{slug}-{new_id()[:6]}"
+        data["slug"] = slug
+    res = await db.articles.find_one_and_update(
+        {"id": article_id}, {"$set": data}, return_document=True)
+    return clean(res)
+
+@api_router.delete("/admin/articles/{article_id}")
+async def delete_article(article_id: str, user: dict = Depends(get_current_user)):
+    await db.articles.delete_one({"id": article_id})
+    return {"message": "Article supprimé"}
+
+# ------------------------------------------------------------------ Admin - Realisations
+@api_router.post("/admin/realisations", response_model=Realisation)
+async def create_realisation(payload: RealisationInput, user: dict = Depends(get_current_user)):
+    item = Realisation(**payload.model_dump())
+    await db.realisations.insert_one(item.model_dump())
+    return item
+
+@api_router.put("/admin/realisations/{item_id}", response_model=Realisation)
+async def update_realisation(item_id: str, payload: RealisationInput, user: dict = Depends(get_current_user)):
+    res = await db.realisations.find_one_and_update(
+        {"id": item_id}, {"$set": payload.model_dump()}, return_document=True)
+    if not res:
+        raise HTTPException(status_code=404, detail="Réalisation introuvable")
+    return clean(res)
+
+@api_router.delete("/admin/realisations/{item_id}")
+async def delete_realisation(item_id: str, user: dict = Depends(get_current_user)):
+    await db.realisations.delete_one({"id": item_id})
+    return {"message": "Réalisation supprimée"}
+
+# ------------------------------------------------------------------ Admin - Partners
+@api_router.post("/admin/partners", response_model=Partner)
+async def create_partner(payload: PartnerInput, user: dict = Depends(get_current_user)):
+    item = Partner(**payload.model_dump())
+    await db.partners.insert_one(item.model_dump())
+    return item
+
+@api_router.put("/admin/partners/{item_id}", response_model=Partner)
+async def update_partner(item_id: str, payload: PartnerInput, user: dict = Depends(get_current_user)):
+    res = await db.partners.find_one_and_update(
+        {"id": item_id}, {"$set": payload.model_dump()}, return_document=True)
+    if not res:
+        raise HTTPException(status_code=404, detail="Partenaire introuvable")
+    return clean(res)
+
+@api_router.delete("/admin/partners/{item_id}")
+async def delete_partner(item_id: str, user: dict = Depends(get_current_user)):
+    await db.partners.delete_one({"id": item_id})
+    return {"message": "Partenaire supprimé"}
+
+# ------------------------------------------------------------------ Admin - Certifications
+@api_router.post("/admin/certifications", response_model=Certification)
+async def create_certification(payload: CertificationInput, user: dict = Depends(get_current_user)):
+    item = Certification(**payload.model_dump())
+    await db.certifications.insert_one(item.model_dump())
+    return item
+
+@api_router.put("/admin/certifications/{item_id}", response_model=Certification)
+async def update_certification(item_id: str, payload: CertificationInput, user: dict = Depends(get_current_user)):
+    res = await db.certifications.find_one_and_update(
+        {"id": item_id}, {"$set": payload.model_dump()}, return_document=True)
+    if not res:
+        raise HTTPException(status_code=404, detail="Certification introuvable")
+    return clean(res)
+
+@api_router.delete("/admin/certifications/{item_id}")
+async def delete_certification(item_id: str, user: dict = Depends(get_current_user)):
+    await db.certifications.delete_one({"id": item_id})
+    return {"message": "Certification supprimée"}
+
+# ------------------------------------------------------------------ Admin - Submissions
+@api_router.get("/admin/contacts")
+async def admin_contacts(user: dict = Depends(get_current_user)):
+    return await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+
+@api_router.patch("/admin/contacts/{item_id}")
+async def mark_contact_read(item_id: str, user: dict = Depends(get_current_user)):
+    await db.contacts.update_one({"id": item_id}, {"$set": {"read": True}})
+    return {"message": "OK"}
+
+@api_router.delete("/admin/contacts/{item_id}")
+async def delete_contact(item_id: str, user: dict = Depends(get_current_user)):
+    await db.contacts.delete_one({"id": item_id})
+    return {"message": "Message supprimé"}
+
+@api_router.get("/admin/quotes")
+async def admin_quotes(user: dict = Depends(get_current_user)):
+    return await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+
+@api_router.patch("/admin/quotes/{item_id}")
+async def update_quote_status(item_id: str, body: dict, user: dict = Depends(get_current_user)):
+    status = body.get("status", "nouveau")
+    await db.quotes.update_one({"id": item_id}, {"$set": {"status": status}})
+    return {"message": "OK"}
+
+@api_router.delete("/admin/quotes/{item_id}")
+async def delete_quote(item_id: str, user: dict = Depends(get_current_user)):
+    await db.quotes.delete_one({"id": item_id})
+    return {"message": "Demande supprimée"}
+
+@api_router.get("/admin/newsletter")
+async def admin_newsletter(user: dict = Depends(get_current_user)):
+    return await db.newsletter.find({}, {"_id": 0}).sort("created_at", -1).to_list(5000)
+
+# ------------------------------------------------------------------ Register router + CORS
 app.include_router(api_router)
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -77,13 +519,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# ------------------------------------------------------------------ Startup: seed
+async def seed_admin():
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@stmpagri.ci").lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "StmpAgri2025!")
+    existing = await db.users.find_one({"email": admin_email})
+    if existing is None:
+        await db.users.insert_one({
+            "email": admin_email, "password_hash": hash_password(admin_password),
+            "name": "Administrateur STMP", "role": "admin", "created_at": now_iso()})
+        logger.info("Admin seeded: %s", admin_email)
+    elif not verify_password(admin_password, existing["password_hash"]):
+        await db.users.update_one({"email": admin_email},
+                                  {"$set": {"password_hash": hash_password(admin_password)}})
+        logger.info("Admin password updated")
+
+async def seed_content():
+    from seed_data import (SEED_PRODUCTS, SEED_ARTICLES, SEED_REALISATIONS,
+                           SEED_PARTNERS, SEED_CERTIFICATIONS, SEED_STATS)
+    if await db.products.count_documents({}) == 0:
+        await db.products.insert_many([Product(**p).model_dump() for p in SEED_PRODUCTS])
+    if await db.articles.count_documents({}) == 0:
+        arts = [Article(**a, slug=slugify(a["title"])).model_dump() for a in SEED_ARTICLES]
+        await db.articles.insert_many(arts)
+    if await db.realisations.count_documents({}) == 0:
+        await db.realisations.insert_many([Realisation(**r).model_dump() for r in SEED_REALISATIONS])
+    if await db.partners.count_documents({}) == 0:
+        await db.partners.insert_many([Partner(**p).model_dump() for p in SEED_PARTNERS])
+    if await db.certifications.count_documents({}) == 0:
+        await db.certifications.insert_many([Certification(**c).model_dump() for c in SEED_CERTIFICATIONS])
+    if await db.site_stats.find_one({"_id": "singleton"}) is None:
+        await db.site_stats.insert_one({"_id": "singleton", **SEED_STATS})
+
+@app.on_event("startup")
+async def startup():
+    await db.users.create_index("email", unique=True)
+    await seed_admin()
+    await seed_content()
+    logger.info("STMP Agri API ready")
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown():
     client.close()

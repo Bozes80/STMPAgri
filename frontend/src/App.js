@@ -1,54 +1,79 @@
-import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/context/AuthContext";
+import ScrollToTop from "@/components/ScrollToTop";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import PublicLayout from "@/components/PublicLayout";
+import Home from "@/pages/Home";
+import Produits from "@/pages/Produits";
+import ProduitDetail from "@/pages/ProduitDetail";
+import Realisations from "@/pages/Realisations";
+import Actualites from "@/pages/Actualites";
+import ArticleDetail from "@/pages/ArticleDetail";
+import Certifications from "@/pages/Certifications";
+import Partenaires from "@/pages/Partenaires";
+import RSE from "@/pages/RSE";
+import Contact from "@/pages/Contact";
+import Devis from "@/pages/Devis";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminLayout from "@/pages/admin/AdminLayout";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminArticles from "@/pages/admin/AdminArticles";
+import AdminRealisations from "@/pages/admin/AdminRealisations";
+import AdminPartners from "@/pages/admin/AdminPartners";
+import AdminCertifications from "@/pages/admin/AdminCertifications";
+import AdminContacts from "@/pages/admin/AdminContacts";
+import AdminQuotes from "@/pages/admin/AdminQuotes";
+import AdminNewsletter from "@/pages/admin/AdminNewsletter";
 
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/produits" element={<Produits />} />
+              <Route path="/produits/:id" element={<ProduitDetail />} />
+              <Route path="/realisations" element={<Realisations />} />
+              <Route path="/actualites" element={<Actualites />} />
+              <Route path="/actualites/:slug" element={<ArticleDetail />} />
+              <Route path="/certifications" element={<Certifications />} />
+              <Route path="/partenaires" element={<Partenaires />} />
+              <Route path="/rse" element={<RSE />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/devis" element={<Devis />} />
+            </Route>
+
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="produits" element={<AdminProducts />} />
+              <Route path="articles" element={<AdminArticles />} />
+              <Route path="realisations" element={<AdminRealisations />} />
+              <Route path="partenaires" element={<AdminPartners />} />
+              <Route path="certifications" element={<AdminCertifications />} />
+              <Route path="contacts" element={<AdminContacts />} />
+              <Route path="devis" element={<AdminQuotes />} />
+              <Route path="newsletter" element={<AdminNewsletter />} />
+            </Route>
+          </Routes>
+          <Toaster position="top-right" richColors closeButton />
+        </BrowserRouter>
+      </AuthProvider>
     </div>
   );
 }

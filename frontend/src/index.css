@@ -2,74 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --font-heading: "Outfit", system-ui, sans-serif;
+    --font-body: "Manrope", system-ui, sans-serif;
+}
+
 body {
     margin: 0;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-        sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
+h1, h2, h3, h4, h5, .font-heading {
+    font-family: var(--font-heading);
+}
+
 code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
+        /* STMP Agri — brand palette (light) */
+        --background: 120 20% 99%;
+        --foreground: 215 28% 17%;
         --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
+        --card-foreground: 215 28% 17%;
         --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 0 0% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
+        --popover-foreground: 215 28% 17%;
+        --primary: 144 79% 27%;            /* Vert foncé #0E7A3A */
+        --primary-foreground: 0 0% 100%;
+        --secondary: 100 30% 95%;
+        --secondary-foreground: 144 60% 20%;
+        --muted: 140 16% 95%;
+        --muted-foreground: 215 14% 42%;
+        --accent: 90 55% 92%;
+        --accent-foreground: 144 60% 20%;
+        --destructive: 0 72% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 140 14% 88%;
+        --input: 140 14% 88%;
+        --ring: 144 79% 27%;
+        --chart-1: 144 79% 27%;
+        --chart-2: 85 49% 46%;
+        --chart-3: 82 59% 59%;
+        --chart-4: 53 100% 47%;
+        --chart-5: 215 28% 30%;
         --radius: 0.5rem;
+
+        /* brand tokens */
+        --stmp-dark: 144 79% 27%;
+        --stmp-olive: 85 49% 46%;
+        --stmp-light: 82 59% 59%;
+        --stmp-gold: 53 100% 47%;
+        --stmp-anthracite: 215 28% 17%;
     }
+
     .dark {
-        --background: 0 0% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 0 0% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 0 0% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 0 0% 9%;
-        --secondary: 0 0% 14.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 0 0% 14.9%;
-        --muted-foreground: 0 0% 63.9%;
-        --accent: 0 0% 14.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 14.9%;
-        --input: 0 0% 14.9%;
-        --ring: 0 0% 83.1%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+        --background: 140 22% 5%;          /* #0B110D */
+        --foreground: 150 10% 95%;
+        --card: 146 20% 9%;                /* #131E17 */
+        --card-foreground: 150 10% 95%;
+        --popover: 146 22% 8%;
+        --popover-foreground: 150 10% 95%;
+        --primary: 130 52% 44%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 146 18% 14%;
+        --secondary-foreground: 150 10% 92%;
+        --muted: 146 16% 14%;
+        --muted-foreground: 150 8% 65%;
+        --accent: 146 20% 16%;
+        --accent-foreground: 82 59% 70%;
+        --destructive: 0 62% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 146 20% 16%;
+        --input: 146 20% 18%;
+        --ring: 130 52% 44%;
+        --chart-1: 130 52% 44%;
+        --chart-2: 85 49% 55%;
+        --chart-3: 82 59% 62%;
+        --chart-4: 53 100% 55%;
+        --chart-5: 150 10% 80%;
     }
 }
 
@@ -80,36 +94,64 @@ code {
     body {
         @apply bg-background text-foreground;
     }
+    ::selection {
+        background: hsl(var(--stmp-gold));
+        color: hsl(var(--stmp-anthracite));
+    }
 }
+
+@layer utilities {
+    .text-stmp-dark { color: #0E7A3A; }
+    .text-stmp-gold { color: #F2D400; }
+    .bg-stmp-dark { background-color: #0E7A3A; }
+    .bg-stmp-olive { background-color: #7FAE3C; }
+    .bg-stmp-light { background-color: #A8D45A; }
+    .bg-stmp-gold { background-color: #F2D400; }
+    .bg-stmp-anthracite { background-color: #1F2937; }
+
+    .container-stmp {
+        @apply max-w-7xl mx-auto px-6 lg:px-8;
+    }
+
+    /* farm-plots + sun motif as subtle background grid */
+    .motif-plots {
+        background-image:
+            linear-gradient(hsl(var(--stmp-dark) / 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(var(--stmp-dark) / 0.05) 1px, transparent 1px);
+        background-size: 44px 44px;
+    }
+
+    .glass-header {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+
+    .animate-marquee {
+        animation: marquee 32s linear infinite;
+    }
+}
+
+@keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.spin-slow { animation: spin-slow 40s linear infinite; }
 
 @layer base {
     [data-debug-wrapper="true"] {
         display: contents !important;
     }
-
     [data-debug-wrapper="true"] > * {
-        margin-left: inherit;
-        margin-right: inherit;
-        margin-top: inherit;
-        margin-bottom: inherit;
-        padding-left: inherit;
-        padding-right: inherit;
-        padding-top: inherit;
-        padding-bottom: inherit;
-        column-gap: inherit;
-        row-gap: inherit;
-        gap: inherit;
-        border-left-width: inherit;
-        border-right-width: inherit;
-        border-top-width: inherit;
-        border-bottom-width: inherit;
-        border-left-style: inherit;
-        border-right-style: inherit;
-        border-top-style: inherit;
-        border-bottom-style: inherit;
-        border-left-color: inherit;
-        border-right-color: inherit;
-        border-top-color: inherit;
-        border-bottom-color: inherit;
+        margin-left: inherit; margin-right: inherit; margin-top: inherit; margin-bottom: inherit;
+        padding-left: inherit; padding-right: inherit; padding-top: inherit; padding-bottom: inherit;
+        column-gap: inherit; row-gap: inherit; gap: inherit;
+        border-left-width: inherit; border-right-width: inherit; border-top-width: inherit; border-bottom-width: inherit;
+        border-left-style: inherit; border-right-style: inherit; border-top-style: inherit; border-bottom-style: inherit;
+        border-left-color: inherit; border-right-color: inherit; border-top-color: inherit; border-bottom-color: inherit;
     }
 }
