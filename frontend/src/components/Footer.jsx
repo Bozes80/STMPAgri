@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Linkedin, Instagram, Twitter, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Facebook, Linkedin, Instagram, Twitter, MapPin, Phone, Smartphone, Mail, Clock } from "lucide-react";
 import Logo from "@/components/Logo";
 import Newsletter from "@/components/Newsletter";
 import { COMPANY, NAV_LINKS, SERVICES } from "@/lib/constants";
@@ -73,6 +73,12 @@ export default function Footer() {
               <Phone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
               <a href={COMPANY.phoneHref} className="hover:text-[#A8D45A]">{COMPANY.phone}</a>
             </li>
+            {COMPANY.mobiles.map((m) => (
+              <li key={m.href} className="flex gap-3">
+                <Smartphone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
+                <a href={m.href} className="hover:text-[#A8D45A]">{m.value}</a>
+              </li>
+            ))}
             <li className="flex gap-3">
               <Mail className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
               <a href={`mailto:${COMPANY.email}`} className="hover:text-[#A8D45A]">{COMPANY.email}</a>
