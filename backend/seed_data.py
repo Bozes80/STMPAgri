@@ -11,7 +11,7 @@ IMG = {
     "fertilizer": "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmZXJ0aWxpemVyJTIwcGxhbnQlMjBzYWNrcyUyMGFncmljdWx0dXJlfGVufDB8fHx8MTc4Mzk1NTg5OHww&ixlib=rb-4.1.0&q=85",
 }
 
-SEED_STATS = {"partners": 45, "countries": 12, "clients": 380, "years": 10}
+SEED_STATS = {"partners": 45, "countries": 12, "clients": 380, "years": 4}
 
 SEED_PRODUCTS = [
     {
