@@ -1,0 +1,126 @@
+{
+  "project_name": "STMP Agri - Premium Corporate Website & Admin Dashboard",
+  "theme_preference": "hybrid",
+  "language": "fr",
+  "typography": {
+    "heading_font": "Outfit",
+    "body_font": "Manrope",
+    "description": "Outfit offers an authoritative, high-end geometric structure suitable for an international B2B logistics/agri brand. Manrope provides crisp legibility for complex data in the dashboard and dense paragraphs.",
+    "hierarchy": {
+      "h1": "text-5xl md:text-6xl+ font-bold tracking-tight leading-none text-stmp-dark",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight leading-tight",
+      "h3": "text-xl md:text-2xl font-medium",
+      "h4": "text-lg md:text-xl font-medium",
+      "body": "text-base leading-relaxed text-gray-700 dark:text-gray-300",
+      "small": "text-sm uppercase tracking-[0.2em] font-bold"
+    }
+  },
+  "colors": {
+    "primary": {
+      "name": "Vert Foncé",
+      "hex": "#0E7A3A",
+      "usage": "Brand core, main CTAs, headers, trusting elements"
+    },
+    "secondary": {
+      "name": "Vert Olive",
+      "hex": "#7FAE3C",
+      "usage": "Growth indicators, secondary buttons, hover states for primary"
+    },
+    "tertiary": {
+      "name": "Vert Clair",
+      "hex": "#A8D45A",
+      "usage": "Innovation accents, badges, highlights, subtle backgrounds (at 10% opacity)"
+    },
+    "accent": {
+      "name": "Jaune Doré",
+      "hex": "#F2D400",
+      "usage": "Energy, success metrics, alerts, 'Demander un devis' special highlights"
+    },
+    "neutrals": {
+      "white": "#FFFFFF",
+      "gray_light": "#F8FAF9",
+      "gray_medium": "#9CA3AF",
+      "anthracite": "#1F2937",
+      "dark_bg": "#0B110D"
+    },
+    "dark_mode_overrides": {
+      "background": "#0B110D",
+      "surface": "#131E17",
+      "text": "#F3F4F6",
+      "border": "#1E3024"
+    }
+  },
+  "visual_enhancers": {
+    "graphic_device": "The 'parcelles agricoles + soleil' (farm plots + sun) motif must be used subtly. Use it as a watermark (5-10% opacity) in the background of key sections, as a stylized SVG separator between sections, and integrated into premium vector icons.",
+    "surfaces": "Glassmorphism (The 'Crystal' Variant) for the sticky header (backdrop-blur-xl bg-white/80 or bg-[#0B110D]/80). Solid clean surfaces for dashboard and product cards.",
+    "borders": "Use crisp 1px borders (border-gray-200 dark:border-[#1E3024]) for a premium, structured 'Swiss' feel. Avoid muddy drop shadows; use sharp, intentional shadows or no shadows with borders.",
+    "hover_states": "Interactive elements must lift slightly (-translate-y-1) and increase border/shadow contrast. ALWAYS explicitly set text color on hover."
+  },
+  "layouts": {
+    "spacing": "Generous spacing. Use py-24 or py-32 for marketing page sections. Bento grid layouts (gap-8) for 'Nos métiers' and feature highlights.",
+    "hero_section": "Immersive full-screen (min-h-[90vh]). Background image with bg-black/50 overlay to ensure text contrast. Big Outfit headline, bright Jaune Doré accent button. Parcelles + soleil motif animating subtly.",
+    "dashboard": "High-density grid (gap-4). Sidebar navigation. Clean, functional Shadcn UI tables and forms. Sharp edges or max 8px border-radius.",
+    "container": "max-w-7xl mx-auto px-6 lg:px-8 for standard content. Edge-to-edge for specific gallery or hero elements."
+  },
+  "components": {
+    "buttons": "Slightly rounded (rounded-md) for premium feel. Primary: bg-[#0E7A3A] text-white hover:bg-[#0B632F]. Accent (Quote): bg-[#F2D400] text-[#1F2937] hover:bg-[#D9BE00] font-bold. Always add focus rings.",
+    "cards": "1px subtle border. Internal padding p-8. Image at top or side with sharp crop.",
+    "inputs": "Shadcn standard but styled with brand focus rings (focus:ring-[#0E7A3A]). Clean external labels. Use interactive calendar for date pickers.",
+    "navigation": "Sticky glass header. Desktop: Full links + CTA. Mobile: Hamburger menu. Footer: Rich, dark (#1F2937) with Vert Clair text accents, huge logo.",
+    "toast": "Use sonner for success/error notifications (Quote sent, etc)."
+  },
+  "motion": {
+    "page_transitions": "Framer Motion for soft fade-in and slide-up of sections as they scroll into view (staggered children).",
+    "micro_interactions": "Button hover fill expansion, subtle scale on card hover, smooth accordion expansions for FAQ/Products.",
+    "parallax": "Use on Hero background and large divider images."
+  },
+  "media": {
+    "image_urls": {
+      "african_agriculture": [
+        "https://images.unsplash.com/photo-1768775517205-7f4bc1b3f771?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDB8MHwxfHNlYXJjaHwyfHxhZnJpY2FuJTIwYWdyaWN1bHR1cmUlMjBmaWVsZCUyMHN1bnNldHxlbnwwfHx8fDE3ODM5NTU4ODN8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "cargo_logistics": [
+        "https://images.unsplash.com/photo-1606185540834-d6e7483ee1a4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxjYXJnbyUyMHNoaXAlMjBjb250YWluZXJzJTIwcG9ydHxlbnwwfHx8fDE3ODM5NTU4ODR8MA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1678182451047-196f22a4143e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwzfHxjYXJnbyUyMHNoaXAlMjBjb250YWluZXJzJTIwcG9ydHxlbnwwfHx8fDE3ODM5NTU4ODR8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "truck_transport": [
+        "https://images.unsplash.com/photo-1670509295484-df0c2512fec4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxjb21tZXJjaWFsJTIwdHJhbnNwb3J0JTIwdHJ1Y2slMjBoaWdod2F5fGVufDB8fHx8MTc4Mzk1NTg4M3ww&ixlib=rb-4.1.0&q=85"
+      ],
+      "sustainable_farming": [
+        "https://images.unsplash.com/photo-1622383563227-04401ab4e5ea?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHw0fHxzdXN0YWluYWJsZSUyMGZhcm1pbmclMjBoYW5kc3xlbnwwfHx8fDE3ODM5NTU4ODR8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "warehouse_workers": [
+        "https://images.unsplash.com/photo-1586528116022-aeda1613c63d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwyfHx3YXJlaG91c2UlMjBsb2dpc3RpY3MlMjB3b3JrZXJzfGVufDB8fHx8MTc4Mzk1NTg4M3ww&ixlib=rb-4.1.0&q=85"
+      ],
+      "agro_industry": [
+        "https://images.unsplash.com/photo-1651525669944-00de65d3b8a5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmb29kJTIwcHJvY2Vzc2luZyUyMGFncm8lMjBpbmR1c3RyeXxlbnwwfHx8fDE3ODM5NTU4OTh8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "fertilizer": [
+        "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmZXJ0aWxpemVyJTIwcGxhbnQlMjBzYWNrcyUyMGFncmljdWx0dXJlfGVufDB8fHx8MTc4Mzk1NTg5OHww&ixlib=rb-4.1.0&q=85"
+      ]
+    },
+    "icons": "Use lucide-react. Ensure to map agriculture, truck, container, leaf, and shield icons for services."
+  },
+  "accessibility": {
+    "contrast": "Ensure white text on #0E7A3A meets 4.5:1 ratio. Darken overlay on hero images if needed.",
+    "testing": "All interactive elements MUST include data-testid attributes (e.g., data-testid='hero-cta-quote', data-testid='contact-form-submit')."
+  },
+  "instructions_to_main_agent": [
+    "Do not use generic 'Inter' or 'Roboto'. Import 'Outfit' and 'Manrope' from Google Fonts.",
+    "Implement the hybrid fullstack app: React Router for public marketing pages and /admin for the back-office dashboard.",
+    "Build a custom floating WhatsApp button fixed at the bottom right.",
+    "Use Framer Motion for section-level scroll reveals.",
+    "Ensure 'Nos métiers' uses an asymmetrical or bento-style grid to break monotonous layouts.",
+    "Implement the 'Demande de devis' intelligent form with Shadcn components (dropdowns, interactive date picker, checkboxes).",
+    "Dashboard should be strictly utilitarian but styled with the STMP brand colors (anthracite bg for sidebar, green accents)."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "NEVER use placeholder images; use the provided image URLs.",
+    "NEVER use AI assistant Emoji characters.",
+    "Use glass-morphism effects with backdrop filters for sticky headers.",
+    "Use sonner for toasts notifications.",
+    "Always use data-testid for key elements."
+  ]
+}
