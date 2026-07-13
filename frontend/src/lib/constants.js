@@ -12,7 +12,7 @@ export const COMPANY = {
   whatsapp: "225 07 07 07 07 07",
   whatsappHref: "https://wa.me/2250707070707",
   email: "contact@stmpagri.ci",
-  address: "Zone Industrielle de Yopougon, Abidjan, Côte d'Ivoire",
+  address: "Treichville, Avenue 21, Rue 12 - Face de Cacomiaf",
   hours: [
     { day: "Lundi – Vendredi", time: "08h00 – 18h00" },
     { day: "Samedi", time: "09h00 – 13h00" },
