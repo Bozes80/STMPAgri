@@ -73,12 +73,17 @@ export default function Footer() {
               <Phone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
               <a href={COMPANY.phoneHref} className="hover:text-[#A8D45A]">{COMPANY.phone}</a>
             </li>
-            {COMPANY.mobiles.map((m) => (
-              <li key={m.href} className="flex gap-3">
-                <Smartphone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-                <a href={m.href} className="hover:text-[#A8D45A]">{m.value}</a>
-              </li>
-            ))}
+            <li className="flex gap-3">
+              <Smartphone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
+              <span>
+                {COMPANY.mobiles.map((m, i) => (
+                  <span key={m.href}>
+                    {i > 0 && " / "}
+                    <a href={m.href} className="hover:text-[#A8D45A]">{m.value}</a>
+                  </span>
+                ))}
+              </span>
+            </li>
             <li className="flex gap-3">
               <Mail className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
               <a href={`mailto:${COMPANY.email}`} className="hover:text-[#A8D45A]">{COMPANY.email}</a>
