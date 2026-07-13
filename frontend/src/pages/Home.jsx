@@ -21,7 +21,7 @@ const ACTIVITIES = [
   },
   {
     title: "Vente de produits phytosanitaires",
-    image: IMAGES.african_agri,
+    image: IMAGES.phyto,
     text: "Herbicides, insecticides et fongicides homologués et conformes aux normes phytosanitaires en vigueur. Nous protégeons vos cultures tout en garantissant la sécurité des opérateurs et des consommateurs.",
     cta: "Voir les produits phyto",
     to: "/produits?cat=herbicides",
