@@ -9,6 +9,10 @@ export const COMPANY = {
   slogan: "Nourrir nos terres pour nourrir l'Afrique.",
   phone: "+225 27 21 34 26 74",
   phoneHref: "tel:+2252721342674",
+  mobiles: [
+    { value: "(+225) 05 01 04 64 64", href: "tel:+2250501046464" },
+    { value: "(+225) 07 89 99 36 40", href: "tel:+2250789993640" },
+  ],
   whatsapp: "225 07 07 07 07 07",
   whatsappHref: "https://wa.me/2250707070707",
   email: "contact@stmpagri.ci",

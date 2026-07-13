@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Phone, Mail, MapPin, Clock, MessageCircle, Send } from "lucide-react";
+import { Loader2, Phone, Smartphone, Mail, MapPin, Clock, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
@@ -35,6 +35,12 @@ export default function Contact() {
 
   const infos = [
     { icon: Phone, label: "Téléphone", value: COMPANY.phone, href: COMPANY.phoneHref },
+    ...COMPANY.mobiles.map((m, i) => ({
+      icon: Smartphone,
+      label: i === 0 ? "Mobile" : "Mobile (2)",
+      value: m.value,
+      href: m.href,
+    })),
     { icon: MessageCircle, label: "WhatsApp", value: COMPANY.whatsapp, href: COMPANY.whatsappHref },
     { icon: Mail, label: "E-mail", value: COMPANY.email, href: `mailto:${COMPANY.email}` },
     { icon: MapPin, label: "Adresse", value: COMPANY.address },
