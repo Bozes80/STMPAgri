@@ -15,32 +15,32 @@ SEED_STATS = {"partners": 45, "countries": 12, "clients": 380, "years": 4}
 
 SEED_PRODUCTS = [
     {
-        "name": "Engrais NPK 15-15-15", "category": "engrais", "subcategory": "NPK",
+        "name": "NPK", "category": "engrais", "subcategory": "NPK",
         "description": "Engrais complet équilibré en azote, phosphore et potassium, adapté à un large éventail de cultures vivrières et de rente en Côte d'Ivoire.",
         "characteristics": ["Composition : 15% N - 15% P₂O₅ - 15% K₂O", "Granulés homogènes hydrosolubles", "Conditionnement : sacs de 50 kg", "Origine : import certifié"],
         "applications": ["Cultures vivrières (riz, maïs, manioc)", "Cultures maraîchères", "Fertilisation de fond"],
-        "image": IMG["fertilizer"], "featured": True, "order": 1,
+        "image": "https://images.pexels.com/photos/31673795/pexels-photo-31673795.jpeg?auto=compress&cs=tinysrgb&w=1200", "featured": True, "order": 1,
     },
     {
         "name": "Urée 46% N", "category": "engrais", "subcategory": "UREE",
         "description": "Engrais azoté à haute concentration, idéal pour stimuler la croissance végétative et augmenter les rendements.",
         "characteristics": ["Azote : 46% sous forme uréique", "Granulométrie régulière", "Sacs de 50 kg", "Haute solubilité"],
         "applications": ["Céréales", "Cultures industrielles (coton, canne à sucre)", "Apport en couverture"],
-        "image": IMG["fertilizer"], "featured": True, "order": 2,
+        "image": "https://images.pexels.com/photos/5987894/pexels-photo-5987894.jpeg?auto=compress&cs=tinysrgb&w=1200", "featured": True, "order": 2,
     },
     {
         "name": "Chlorure de Potassium (KCL 60%)", "category": "engrais", "subcategory": "KCL",
         "description": "Source concentrée de potassium favorisant la résistance des plantes et la qualité des récoltes.",
         "characteristics": ["Potassium : 60% K₂O", "Rouge granulé", "Sacs de 50 kg"],
         "applications": ["Palmier à huile", "Hévéa", "Cultures fruitières"],
-        "image": IMG["fertilizer"], "featured": False, "order": 3,
+        "image": "https://images.pexels.com/photos/14242187/pexels-photo-14242187.jpeg?auto=compress&cs=tinysrgb&w=1200", "featured": False, "order": 3,
     },
     {
         "name": "Kieserite (Sulfate de Magnésium)", "category": "engrais", "subcategory": "KIESERITE",
         "description": "Engrais magnésien et soufré qui corrige les carences et optimise la photosynthèse.",
         "characteristics": ["25% MgO - 20% SO₃", "Granulés solubles", "Sacs de 50 kg"],
         "applications": ["Palmier à huile", "Cacaoyer", "Cultures sensibles aux carences en magnésium"],
-        "image": IMG["fertilizer"], "featured": False, "order": 4,
+        "image": "https://images.pexels.com/photos/11996941/pexels-photo-11996941.jpeg?auto=compress&cs=tinysrgb&w=1200", "featured": False, "order": 4,
     },
     {
         "name": "Fertilisant organo-minéral", "category": "fertilisants", "subcategory": None,
