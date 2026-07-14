@@ -103,3 +103,92 @@ export const IMAGES = {
   fertilizer: "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmZXJ0aWxpemVyJTIwcGxhbnQlMjBzYWNrcyUyMGFncmljdWx0dXJlfGVufDB8fHx8MTc4Mzk1NTg5OHww&ixlib=rb-4.1.0&q=85",
   phyto: "https://images.pexels.com/photos/37965300/pexels-photo-37965300.jpeg?auto=compress&cs=tinysrgb&w=1400",
 };
+
+export const METIER_DETAILS = {
+  "import-export": {
+    title: "Import-export",
+    tagline: "Vos opérations internationales, gérées de bout en bout.",
+    image: IMAGES.cargo1,
+    intro:
+      "STMP Agri accompagne les entreprises et les institutions dans l'ensemble de leurs opérations d'import-export. De la recherche de fournisseurs au dédouanement, en passant par la logistique portuaire, nous sécurisons chaque étape de la chaîne d'approvisionnement internationale.\nGrâce à notre réseau de partenaires en Afrique et à l'international, nous garantissons des délais maîtrisés et une parfaite conformité réglementaire.",
+    features: [
+      "Sourcing international de produits et d'intrants",
+      "Gestion des formalités douanières",
+      "Logistique portuaire et dédouanement au port d'Abidjan",
+      "Acheminement vers l'hinterland et la sous-région",
+      "Suivi documentaire et traçabilité des marchandises",
+    ],
+  },
+  intrants: {
+    title: "Intrants agricoles",
+    tagline: "Des intrants certifiés pour des rendements durables.",
+    image: IMAGES.fertilizer,
+    intro:
+      "Nous distribuons une gamme complète d'engrais, de fertilisants, d'amendements et d'équipements agricoles sélectionnés pour leur qualité et leur conformité aux normes.\nNos conseillers agronomiques accompagnent producteurs et coopératives dans le choix des intrants adaptés à chaque type de sol et de culture.",
+    features: [
+      "Engrais NPK, Urée, KCL, Kieserite",
+      "Fertilisants organo-minéraux et amendements",
+      "Équipements et matériels agricoles",
+      "Conseil agronomique et plan de fertilisation",
+      "Approvisionnement fiable sur tout le territoire",
+    ],
+    relatedCategory: "engrais",
+  },
+  phyto: {
+    title: "Produits phytosanitaires",
+    tagline: "Protéger les cultures, en toute conformité.",
+    image: IMAGES.phyto,
+    intro:
+      "STMP Agri propose des solutions de protection des cultures — herbicides, insecticides et fongicides — homologuées et conformes aux réglementations phytosanitaires en vigueur.\nNous formons les producteurs aux bonnes pratiques d'application pour garantir la sécurité des opérateurs, des consommateurs et de l'environnement.",
+    features: [
+      "Herbicides sélectifs et totaux homologués",
+      "Insecticides systémiques, de contact et biologiques",
+      "Fongicides préventifs et curatifs",
+      "Conformité aux normes du Comité Sanitaire Phytosanitaire",
+      "Formation aux bonnes pratiques d'application",
+    ],
+    relatedCategory: "herbicides",
+  },
+  transport: {
+    title: "Transport de marchandises",
+    tagline: "Une logistique maîtrisée, du départ à la livraison.",
+    image: IMAGES.truck,
+    intro:
+      "Notre flotte et notre réseau de partenaires assurent le transport routier national et international de vos marchandises, ainsi que leur stockage et leur suivi.\nNous garantissons le respect des délais et la sécurité des opérations logistiques, quel que soit le volume ou la destination.",
+    features: [
+      "Transport routier national et international",
+      "Solutions de stockage et d'entreposage",
+      "Suivi et traçabilité des marchandises",
+      "Logistique multimodale (port, route)",
+      "Respect rigoureux des délais",
+    ],
+  },
+  agro: {
+    title: "Agroalimentaire",
+    tagline: "De la valorisation à la distribution.",
+    image: IMAGES.agro,
+    intro:
+      "STMP Agri intervient sur la chaîne agroalimentaire : valorisation, transformation et distribution de produits agricoles vers les marchés locaux et de la sous-région.\nNous contribuons à créer de la valeur ajoutée locale tout en respectant les normes de sécurité sanitaire.",
+    features: [
+      "Valorisation des productions agricoles",
+      "Transformation et conditionnement",
+      "Distribution vers les marchés régionaux",
+      "Maîtrise de la sécurité sanitaire (HACCP)",
+      "Soutien aux filières et coopératives",
+    ],
+  },
+  commerce: {
+    title: "Commerce général",
+    tagline: "Un partenaire de confiance pour vos achats et ventes.",
+    image: IMAGES.cargo2,
+    intro:
+      "Au-delà de l'agriculture, STMP Agri assure la distribution de biens et services pour les secteurs public et privé.\nNotre expertise commerciale et notre réseau nous permettent de répondre à des besoins variés, avec réactivité et transparence.",
+    features: [
+      "Distribution de biens et services",
+      "Approvisionnement pour le secteur public et privé",
+      "Négoce et sourcing multi-produits",
+      "Réactivité et transparence commerciale",
+      "Accompagnement personnalisé des clients",
+    ],
+  },
+};

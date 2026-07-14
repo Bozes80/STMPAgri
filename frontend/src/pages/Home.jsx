@@ -134,16 +134,20 @@ function Metiers() {
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SERVICES.map((s, i) => (
             <Reveal key={s.key} delay={i * 0.05}>
-              <Card
-                data-testid={`service-card-${s.key}`}
-                className="group h-full p-8 border-border rounded-xl bg-card transition-all duration-300 hover:-translate-y-1 hover:border-[#0E7A3A]/40 hover:shadow-lg"
-              >
-                <div className="h-14 w-14 grid place-items-center rounded-xl bg-[#0E7A3A]/10 text-[#0E7A3A] transition-colors group-hover:bg-[#0E7A3A] group-hover:text-white">
-                  <s.icon className="h-7 w-7" />
-                </div>
-                <h3 className="mt-6 font-heading font-semibold text-xl">{s.title}</h3>
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{s.text}</p>
-              </Card>
+              <Link to={`/metiers/${s.key}`} data-testid={`service-card-${s.key}`} className="block h-full">
+                <Card
+                  className="group h-full p-8 border-border rounded-xl bg-card transition-all duration-300 hover:-translate-y-1 hover:border-[#0E7A3A]/40 hover:shadow-lg"
+                >
+                  <div className="h-14 w-14 grid place-items-center rounded-xl bg-[#0E7A3A]/10 text-[#0E7A3A] transition-colors group-hover:bg-[#0E7A3A] group-hover:text-white">
+                    <s.icon className="h-7 w-7" />
+                  </div>
+                  <h3 className="mt-6 font-heading font-semibold text-xl">{s.title}</h3>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{s.text}</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0E7A3A] group-hover:gap-2 transition-all">
+                    En savoir plus <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Card>
+              </Link>
             </Reveal>
           ))}
         </div>

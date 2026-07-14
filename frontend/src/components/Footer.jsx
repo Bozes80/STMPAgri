@@ -55,8 +55,10 @@ export default function Footer() {
           <h4 className="font-heading font-semibold text-white mb-5">Nos métiers</h4>
           <ul className="space-y-3 text-sm">
             {SERVICES.map((s) => (
-              <li key={s.key} className="text-white/70">
-                {s.title}
+              <li key={s.key}>
+                <Link to={`/metiers/${s.key}`} className="text-white/70 hover:text-[#A8D45A] transition-colors">
+                  {s.title}
+                </Link>
               </li>
             ))}
           </ul>

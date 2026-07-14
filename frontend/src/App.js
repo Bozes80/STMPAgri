@@ -9,6 +9,7 @@ import PublicLayout from "@/components/PublicLayout";
 import Home from "@/pages/Home";
 import Produits from "@/pages/Produits";
 import ProduitDetail from "@/pages/ProduitDetail";
+import MetierDetail from "@/pages/MetierDetail";
 import Realisations from "@/pages/Realisations";
 import Actualites from "@/pages/Actualites";
 import ArticleDetail from "@/pages/ArticleDetail";
@@ -39,6 +40,7 @@ function App() {
           <Routes>
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
+              <Route path="/metiers/:key" element={<MetierDetail />} />
               <Route path="/produits" element={<Produits />} />
               <Route path="/produits/:id" element={<ProduitDetail />} />
               <Route path="/realisations" element={<Realisations />} />
