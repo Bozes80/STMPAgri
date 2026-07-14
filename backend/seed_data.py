@@ -43,6 +43,13 @@ SEED_PRODUCTS = [
         "image": "https://images.pexels.com/photos/11996941/pexels-photo-11996941.jpeg?auto=compress&cs=tinysrgb&w=1200", "featured": False, "order": 4,
     },
     {
+        "name": "Soude caustique (Hydroxyde de sodium - NaOH)", "category": "engrais", "subcategory": "NaOH",
+        "description": "Hydroxyde de sodium (soude caustique) de qualité industrielle, utilisé pour la régulation du pH, le traitement de l'eau et diverses applications agro-industrielles. Disponible en perles ou paillettes, conditionné en sacs.",
+        "characteristics": ["Formule chimique : NaOH", "Pureté industrielle ≥ 98%", "Présentation : perles / paillettes", "Conditionnement : sacs de 25 kg"],
+        "applications": ["Régulation et correction du pH", "Traitement et assainissement de l'eau", "Nettoyage et hygiène agro-industriels", "Saponification et transformation"],
+        "image": IMG["fertilizer"], "featured": False, "order": 5,
+    },
+    {
         "name": "Fertilisant organo-minéral", "category": "fertilisants", "subcategory": None,
         "description": "Amendement enrichi combinant matière organique et éléments minéraux pour restaurer la fertilité des sols.",
         "characteristics": ["Matière organique > 40%", "Enrichi NPK", "Améliore la structure du sol"],
