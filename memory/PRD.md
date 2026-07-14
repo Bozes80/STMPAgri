@@ -30,6 +30,15 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 - **Back-office** (/admin) : login, dashboard, gestion CRUD produits/articles/réalisations/partenaires/certifications,
   messages de contact, demandes de devis (statuts), abonnés newsletter.
 
+## Implémenté (mise à jour fév. 2026)
+- **Produit ajouté** : « Soude caustique (Hydroxyde de sodium - NaOH) » dans la catégorie Engrais, avec image de perles/granulés blancs (Pexels 7717461). Synchronisé dans `seed_data.py` + base.
+- **Notifications e-mail (Resend géré par Emergent)** : à chaque soumission des formulaires **Contact** et **Demande de devis** :
+  - notification interne envoyée à `ressourceshumaine@stmpagri.ci`, `eugenekonan@stmpagri.ci`, `resplogistique@stmpagri.ci` (Reply-To = e-mail du visiteur) ;
+  - accusé de réception envoyé au visiteur.
+  - Envois non bloquants (échec e-mail n'empêche pas l'enregistrement en base). Module : `/app/backend/email_service.py`.
+  - Config `.env` : `EMERGENT_EMAIL_KEY`, `EMAIL_FROM_NAME="STMP Agri"`, `NOTIFICATION_EMAILS`.
+  - Testé end-to-end (HTTP 202 sur les 4 envois + toast de succès UI).
+
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).
 
@@ -38,8 +47,9 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 
 ## Backlog / Prochaines étapes
 - P1 : Bascule multilingue FR/EN complète.
-- P1 : Notification e-mail des demandes (Resend/SendGrid) + envoi de devis PDF.
+- P1 : Envoi de devis PDF (le devis reste texte ; générer/joindre un PDF). Notifications e-mail : FAIT (Resend).
+- P2 : Catalogues PDF téléchargeables + certificats PDF.
+- P2 : Widget de chat WhatsApp flottant réel (actuellement bouton avec lien statique).
 - P2 : Upload d'images dans l'admin (stockage objet) au lieu d'URL.
-- P2 : Téléchargement de catalogues PDF réels + certificats PDF.
 - P2 : Remplacer les coordonnées de démonstration par les vraies (tél, WhatsApp, adresse, réseaux sociaux, Google Maps).
 - P3 : Optimisation SEO avancée (sitemap, meta par page, données structurées).

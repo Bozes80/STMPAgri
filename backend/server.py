@@ -18,6 +18,8 @@ import bcrypt
 import jwt
 import re
 
+import email_service
+
 # ------------------------------------------------------------------ DB
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -322,6 +324,19 @@ async def create_contact(payload: ContactInput):
     doc = payload.model_dump()
     doc.update({"id": new_id(), "created_at": now_iso(), "read": False})
     await db.contacts.insert_one(doc)
+    # Notifications e-mail (non bloquantes)
+    if email_service.NOTIFICATION_EMAILS:
+        await email_service.send_email(
+            to=email_service.NOTIFICATION_EMAILS,
+            subject=f"Nouveau message de contact — {payload.name}",
+            html_content=email_service.build_contact_notification(doc),
+            reply_to=payload.email,
+        )
+    await email_service.send_email(
+        to=[payload.email],
+        subject="STMP Agri — Nous avons bien reçu votre message",
+        html_content=email_service.build_contact_ack(payload.name),
+    )
     return {"message": "Votre message a bien été envoyé. Nous vous répondrons rapidement."}
 
 @api_router.post("/quote")
@@ -331,6 +346,19 @@ async def create_quote(payload: QuoteInput):
     doc = payload.model_dump()
     doc.update({"id": new_id(), "created_at": now_iso(), "status": "nouveau"})
     await db.quotes.insert_one(doc)
+    # Notifications e-mail (non bloquantes)
+    if email_service.NOTIFICATION_EMAILS:
+        await email_service.send_email(
+            to=email_service.NOTIFICATION_EMAILS,
+            subject=f"Nouvelle demande de devis — {payload.prenom} {payload.nom}".strip(),
+            html_content=email_service.build_quote_notification(doc),
+            reply_to=payload.email,
+        )
+    await email_service.send_email(
+        to=[payload.email],
+        subject="STMP Agri — Votre demande de devis a bien été reçue",
+        html_content=email_service.build_quote_ack(payload.prenom, payload.nom),
+    )
     return {"message": "Merci pour votre demande de devis. Votre dossier a bien été reçu. "
                        "Un conseiller STMP Agri vous contactera dans les plus brefs délais "
                        "afin de vous proposer une offre adaptée à vos besoins."}
