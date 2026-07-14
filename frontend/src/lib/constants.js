@@ -29,7 +29,7 @@ export const COMPANY = {
     twitter: "https://twitter.com",
   },
   mapEmbed:
-    "https://www.google.com/maps?q=Yopougon,Abidjan,Cote+d'Ivoire&output=embed",
+    "https://www.google.com/maps?q=5.3012616,-4.0091536&z=17&output=embed",
 };
 
 export const NAV_LINKS = [
