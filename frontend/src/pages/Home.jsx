@@ -10,6 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import ArticleCard from "@/components/ArticleCard";
 import api from "@/lib/api";
 import { SERVICES, WHY_US, IMAGES, COMPANY } from "@/lib/constants";
+import heroImg from "@/assets/hero.webp";
 
 const ACTIVITIES = [
   {
@@ -53,7 +54,7 @@ function Hero() {
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden">
       <div className="absolute inset-0">
-        <img src={IMAGES.hero} alt="Champs agricoles au coucher du soleil" className="h-full w-full object-cover" />
+        <img src={heroImg} alt="Agriculture, logistique et commerce international — STMP Agri" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#08160c]/90 via-[#0b1f10]/75 to-[#0E7A3A]/30" />
       </div>
 
