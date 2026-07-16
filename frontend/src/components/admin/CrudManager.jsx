@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Loader2, Upload, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Upload, ExternalLink, LibraryBig } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +19,12 @@ import {
 } from "@/components/ui/table";
 import api, { formatApiError } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/media";
+import MediaPickerDialog from "@/components/admin/MediaPickerDialog";
 
 function ImageField({ value, onChange, name, placeholder, testid }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -77,6 +79,15 @@ function ImageField({ value, onChange, name, placeholder, testid }) {
                 type="button"
                 variant="outline"
                 size="sm"
+                onClick={() => setPickerOpen(true)}
+                data-testid={`${testid}-library-btn`}
+              >
+                <LibraryBig className="h-4 w-4 mr-1.5" /> Médiathèque
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => window.open(preview, "_blank")}
                 data-testid={`${testid}-view-btn`}
               >
@@ -96,20 +107,31 @@ function ImageField({ value, onChange, name, placeholder, testid }) {
           </div>
         </div>
       ) : (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          data-testid={`${testid}-upload-btn`}
-          className="w-full h-24 border-dashed"
-        >
-          {uploading ? (
-            <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Téléversement…</>
-          ) : (
-            <><Upload className="h-5 w-5 mr-2" /> Téléverser une image (JPG, PNG, WebP)</>
-          )}
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            data-testid={`${testid}-upload-btn`}
+            className="h-24 border-dashed flex-col"
+          >
+            {uploading ? (
+              <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Téléversement…</>
+            ) : (
+              <><Upload className="h-5 w-5 mr-2" /> Téléverser</>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setPickerOpen(true)}
+            data-testid={`${testid}-library-btn`}
+            className="h-24 border-dashed flex-col"
+          >
+            <LibraryBig className="h-5 w-5 mr-2" /> Choisir dans la médiathèque
+          </Button>
+        </div>
       )}
       <input
         ref={inputRef}
@@ -128,7 +150,14 @@ function ImageField({ value, onChange, name, placeholder, testid }) {
         data-testid={`${testid}-url-input`}
         className="text-xs"
       />
-      <p className="text-xs text-muted-foreground">Vous pouvez téléverser un fichier ou coller une URL externe.</p>
+      <p className="text-xs text-muted-foreground">Vous pouvez téléverser un fichier, choisir dans la médiathèque ou coller une URL externe.</p>
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={(url) => onChange(url)}
+        defaultSection="content"
+        testid={`${testid}-picker`}
+      />
     </div>
   );
 }

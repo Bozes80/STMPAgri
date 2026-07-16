@@ -910,6 +910,183 @@ async def download_file(path: str):
         headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
 
+# ------------------------------------------------------------------ Médiathèque (Media Library)
+_MEDIA_SECTIONS = {"header", "content", "footer"}
+
+async def _count_media_usages(url: str) -> dict:
+    """Compte le nombre d'endroits où une URL est référencée (produits, articles, réalisations,
+    partenaires, pages)."""
+    if not url:
+        return {"total": 0, "products": 0, "articles": 0, "realisations": 0, "partners": 0, "pages": 0}
+    async def count(coll, field):
+        return await coll.count_documents({field: url})
+    products      = await count(db.products, "image")
+    articles      = await count(db.articles, "cover_image")
+    realisations  = await count(db.realisations, "image")
+    partners      = await count(db.partners, "logo")
+    # Pages : cover_image OU dans gallery OU contenu HTML
+    pages_cover   = await count(db.pages, "cover_image")
+    pages_gallery = await db.pages.count_documents({"gallery": url})
+    pages_content = await db.pages.count_documents({"content_html": {"$regex": re.escape(url)}})
+    pages_total   = pages_cover + pages_gallery + pages_content
+    total = products + articles + realisations + partners + pages_total
+    return {
+        "total": total,
+        "products": products,
+        "articles": articles,
+        "realisations": realisations,
+        "partners": partners,
+        "pages": pages_total,
+    }
+
+@api_router.post("/admin/media")
+async def create_media(
+    file: UploadFile = File(...),
+    section: str = "content",
+    alt: str = "",
+    title: str = "",
+    tags: str = "",
+    user: dict = Depends(get_current_user),
+):
+    """Upload d'une image dans la médiathèque avec metadata (section, alt, title, tags)."""
+    section = (section or "content").lower().strip()
+    if section not in _MEDIA_SECTIONS:
+        raise HTTPException(status_code=400, detail=f"Section invalide : {section}")
+    filename = file.filename or "file"
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in _ALLOWED_IMAGE_EXTS:
+        raise HTTPException(status_code=400, detail=f"Extension non autorisée : .{ext}")
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Fichier trop volumineux (max 10 Mo).")
+    content_type = file.content_type or _MIME_BY_EXT.get(ext, "application/octet-stream")
+    file_id = new_id()
+    path = f"{storage_service.APP_NAME}/media/{file_id}.{ext}"
+    try:
+        result = await storage_service.put_object(path, data, content_type)
+    except Exception as e:  # noqa: BLE001
+        logger.error("Media upload storage échec : %s", str(e))
+        raise HTTPException(status_code=502, detail="Échec de l'upload vers le stockage.")
+    stored_path = result.get("path", path)
+    url = f"/api/files/{stored_path}"
+    # Enregistre aussi dans `files` pour permettre le download public via /api/files
+    await db.files.insert_one({
+        "id": file_id,
+        "storage_path": stored_path,
+        "original_filename": filename,
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "uploaded_by": user["email"],
+        "created_at": now_iso(),
+    })
+    media_id = new_id()
+    tag_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
+    doc = {
+        "id": media_id,
+        "url": url,
+        "storage_path": stored_path,
+        "filename": filename,
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "section": section,
+        "alt": alt or "",
+        "title": title or filename.rsplit(".", 1)[0],
+        "tags": tag_list,
+        "uploaded_by": user["email"],
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.media.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/admin/media")
+async def list_media(
+    section: Optional[str] = None,
+    q: Optional[str] = None,
+    limit: int = 200,
+    user: dict = Depends(get_current_user),
+):
+    """Liste les médias (filtrables par section + recherche titre/alt/filename/tag)."""
+    query: dict = {}
+    if section and section != "all":
+        s = section.lower().strip()
+        if s not in _MEDIA_SECTIONS:
+            raise HTTPException(status_code=400, detail=f"Section invalide : {section}")
+        query["section"] = s
+    if q:
+        rx = {"$regex": re.escape(q.strip()), "$options": "i"}
+        query["$or"] = [{"title": rx}, {"alt": rx}, {"filename": rx}, {"tags": rx}]
+    limit = max(1, min(int(limit or 200), 1000))
+    items = await db.media.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    return items
+
+@api_router.get("/admin/media/counts")
+async def media_counts(user: dict = Depends(get_current_user)):
+    """Retourne le nombre d'images par section (pour badges de la sidebar)."""
+    out = {"all": 0, "header": 0, "content": 0, "footer": 0}
+    pipeline = [{"$group": {"_id": "$section", "n": {"$sum": 1}}}]
+    async for row in db.media.aggregate(pipeline):
+        sec = row.get("_id") or "content"
+        if sec in _MEDIA_SECTIONS:
+            out[sec] = row.get("n", 0)
+        out["all"] += row.get("n", 0)
+    return out
+
+@api_router.get("/admin/media/{media_id}")
+async def get_media(media_id: str, user: dict = Depends(get_current_user)):
+    m = await db.media.find_one({"id": media_id}, {"_id": 0})
+    if not m:
+        raise HTTPException(status_code=404, detail="Média introuvable.")
+    m["usages"] = await _count_media_usages(m.get("url", ""))
+    return m
+
+@api_router.patch("/admin/media/{media_id}")
+async def update_media(media_id: str, body: dict, user: dict = Depends(get_current_user)):
+    """Met à jour les metadata (section/alt/title/tags) d'un média."""
+    m = await db.media.find_one({"id": media_id}, {"_id": 0})
+    if not m:
+        raise HTTPException(status_code=404, detail="Média introuvable.")
+    updates: dict = {}
+    if "section" in body:
+        sec = (body.get("section") or "content").lower().strip()
+        if sec not in _MEDIA_SECTIONS:
+            raise HTTPException(status_code=400, detail=f"Section invalide : {sec}")
+        updates["section"] = sec
+    if "alt" in body:
+        updates["alt"] = str(body.get("alt") or "")
+    if "title" in body:
+        updates["title"] = str(body.get("title") or "")
+    if "tags" in body:
+        raw = body.get("tags")
+        if isinstance(raw, list):
+            tags = [str(t).strip() for t in raw if str(t).strip()]
+        else:
+            tags = [t.strip() for t in str(raw or "").split(",") if t.strip()]
+        updates["tags"] = tags
+    if not updates:
+        raise HTTPException(status_code=400, detail="Aucun champ modifiable fourni.")
+    updates["updated_at"] = now_iso()
+    await db.media.update_one({"id": media_id}, {"$set": updates})
+    m.update(updates)
+    return m
+
+@api_router.delete("/admin/media/{media_id}")
+async def delete_media(media_id: str, user: dict = Depends(get_current_user)):
+    """Supprime un média (fichier storage + entrée DB). Retourne le nombre d'usages
+    trouvés (informatif — l'admin a confirmé côté frontend)."""
+    m = await db.media.find_one({"id": media_id}, {"_id": 0})
+    if not m:
+        raise HTTPException(status_code=404, detail="Média introuvable.")
+    usages = await _count_media_usages(m.get("url", ""))
+    # Suppression logique du fichier stockage : on flag `is_deleted` sur files (préserve
+    # d'éventuels caches, permet une restauration future manuelle).
+    await db.files.update_many({"storage_path": m.get("storage_path")},
+                               {"$set": {"is_deleted": True, "deleted_at": now_iso()}})
+    await db.media.delete_one({"id": media_id})
+    return {"message": "Média supprimé.", "usages": usages}
+
 # ------------------------------------------------------------------ Register router + CORS
 app.include_router(api_router)
 app.add_middleware(
@@ -1009,6 +1186,8 @@ async def seed_content():
 async def startup():
     await db.users.create_index("email", unique=True)
     await db.pages.create_index("slug", unique=True, sparse=True)
+    await db.media.create_index([("section", 1), ("created_at", -1)])
+    await db.media.create_index("url")
     await seed_admin()
     await seed_content()
     try:
