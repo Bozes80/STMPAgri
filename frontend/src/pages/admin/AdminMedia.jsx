@@ -121,14 +121,12 @@ export default function AdminMedia() {
   };
 
   const copyUrl = async (m) => {
-    const full = `${window.location.origin}${resolveImageUrl(m.url).replace(window.location.origin, "")}`;
     try {
       await navigator.clipboard.writeText(resolveImageUrl(m.url));
       toast.success("URL copiée dans le presse-papiers.");
     } catch {
       toast.error("Impossible de copier l'URL.");
     }
-    void full;
   };
 
   const saveEdit = async () => {

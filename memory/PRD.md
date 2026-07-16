@@ -94,6 +94,17 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - **Sélection multiple + suppression en masse** sur la vue Table — colonne checkbox, « tout sélectionner », toolbar « Actions groupées » avec compteur et bouton « Supprimer la sélection » + AlertDialog de confirmation. Les enfants orphelins remontent à la racine.
   - Endpoints : `POST /api/admin/pages/bulk-delete {ids}` et `POST /api/admin/pages/reorder {items: [{id, parent_id, order}]}`.
   - Testé end-to-end : **100 % backend (18/18 nouveaux tests) + 100 % frontend (Menus + Bulk + Tree + Header/Footer dynamiques + persistance vérifiés).**
+- **Médiathèque (Media Library) — juil. 2026** :
+  - Nouvelle collection MongoDB `media` : `{id, url, storage_path, filename, content_type, size, section, alt, title, tags, uploaded_by, created_at, updated_at}` — 3 sections figées `header` / `content` / `footer`.
+  - Endpoints admin : `POST /api/admin/media` (upload multipart avec query section/alt/title/tags), `GET /api/admin/media?section=<x>&q=<txt>`, `GET /api/admin/media/counts` (counts par section), `GET /api/admin/media/{id}` (avec `usages` = {total, products, articles, realisations, partners, pages}), `PATCH /api/admin/media/{id}` (section, alt, title, tags), `DELETE /api/admin/media/{id}`. Réutilise Emergent Object Storage. Extensions autorisées : JPG/PNG/WebP/GIF/SVG (≤ 10 Mo).
+  - Nouvelle page admin `/admin/medias` (icône `Images` dans sidebar) : titre + sélecteur de section pour l'upload + bouton multi-fichiers, onglets `Toutes / Header / Contenu / Footer` avec badges de comptage, barre de recherche (titre/alt/tag/filename), grille responsive (2→5 colonnes) avec badges de section colorés (vert=header, ambre=content, gris=footer), actions hover par card (Copier URL / Modifier / Supprimer).
+  - Modal **Aperçu grand format** (Dialog) : image plein cadre + metadata (titre, section, taille, date, alt, tags, fichier) + actions Copier URL / Ouvrir / Modifier.
+  - Modal **Édition** : Select section, Input titre, Textarea alt (SEO/a11y), Input tags CSV.
+  - **AlertDialog suppression** : si l'image est référencée ailleurs, un panneau ⚠️ jaune liste les usages (produits/articles/réalisations/partenaires/pages) et le bouton Supprimer reste actif (choix 2.b — autoriser avec alerte forte).
+  - **MediaPickerDialog** (composant réutilisable) intégré dans `CoverImageField` (pages CMS/couvertures) et `ImageField` du `CrudManager` (produits, articles, réalisations, partenaires) : bouton **« Médiathèque »** à côté du bouton **« Téléverser »**. Le picker permet de filtrer par section, chercher, upload direct + sélection puis injection de l'URL relative `/api/files/stmp-agri/media/<uuid>.<ext>` dans le champ image du formulaire.
+  - Testé end-to-end : **100 % backend (19/19 nouveaux tests + 88/88 régression) + 100 % frontend (12/12 flux : sidebar, page, upload multi, filtre onglets, recherche, aperçu, édition, copie URL, suppression avec/sans usages, MediaPicker dans produit, injection URL).**
+
+## Implémenté (mise à jour fév. 2026 - suite)
 
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).
@@ -105,10 +116,11 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 - P1 : Bascule multilingue FR/EN complète.
 - P1 : Envoi de devis PDF (le devis reste texte ; générer/joindre un PDF). Notifications e-mail : FAIT (Resend).
 - P1 : Rédiger le contenu définitif des 6 sous-rubriques « Pourquoi STMP Agri ? » et des 5 fiches d'activités.
-- P1 : Médiathèque UI (navigateur des uploads précédents avec grid + recherche + copier URL, sélectionnable depuis n'importe quel champ image).
+- P1 : Médiathèque UI (grille + recherche + copier URL, sélectionnable depuis n'importe quel champ image) : **FAIT (juil. 2026)** — page /admin/medias + MediaPickerDialog intégré dans les champs image (produits, articles, réalisations, partenaires, pages CMS).
 - **P2 : CMS Pages Phase 3** — blocs custom (accordéons, colonnes, boutons, vidéos, audio, shortcodes), permissions granulaires (rôles Éditeur/Auteur/Modérateur avec Lire/Créer/Modifier/Publier/Supprimer/Restaurer), pages protégées par mot de passe / rôle, CSS/JS custom + templates par page, commentaires internes par page.
 - P2 : Catalogues PDF téléchargeables + certificats PDF.
 - P2 : Widget de chat WhatsApp flottant réel (actuellement bouton avec lien statique).
+- P2 : Refactoring backend (`server.py` > 1100 lignes) → découper en `/app/backend/routes/` + `/app/backend/models/`.
 - P2 : Gestion / suppression des fichiers uploadés (endpoint admin de nettoyage, garbage-collect des orphelins). Upload/Download : FAIT.
 - P2 : Remplacer les coordonnées de démonstration par les vraies (tél, WhatsApp, adresse, réseaux sociaux, Google Maps).
 - P3 : Optimisation SEO avancée (sitemap, meta par page, données structurées).

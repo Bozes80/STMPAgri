@@ -51,7 +51,7 @@ export default function MediaPickerDialog({
   }, [open, defaultSection]);
 
   const { data = [], isLoading } = useQuery({
-    queryKey: ["media", section, q],
+    queryKey: ["media-picker", section, q],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (section && section !== "all") params.set("section", section);
@@ -78,6 +78,7 @@ export default function MediaPickerDialog({
       });
       toast.success("Image téléversée.");
       qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-picker"] });
       qc.invalidateQueries({ queryKey: ["media-counts"] });
       setSelectedId(created.id);
     } catch (err) {
