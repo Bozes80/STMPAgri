@@ -17,36 +17,36 @@ const ACTIVITIES = [
     title: "Achat et vente d'engrais",
     image: IMAGES.fertilizer,
     text: "STMP Agri sélectionne et distribue des engrais de qualité — NPK, Urée, KCL, Kieserite — pour optimiser la nutrition de vos cultures et maximiser vos rendements. Un approvisionnement fiable, au meilleur rapport qualité-prix.",
-    cta: "Découvrir nos engrais",
-    to: "/produits?cat=engrais",
+    cta: "Découvrir cette activité",
+    to: "/activites/achat-vente-engrais",
   },
   {
     title: "Vente de produits phytosanitaires",
     image: IMAGES.phyto,
     text: "Herbicides, insecticides et fongicides homologués et conformes aux normes phytosanitaires en vigueur. Nous protégeons vos cultures tout en garantissant la sécurité des opérateurs et des consommateurs.",
-    cta: "Voir les produits phyto",
-    to: "/produits?cat=herbicides",
+    cta: "Découvrir cette activité",
+    to: "/activites/produits-phytosanitaires",
   },
   {
     title: "Distribution de produits agroalimentaires",
     image: IMAGES.agro,
     text: "De la valorisation à la distribution, STMP Agri accompagne la filière agroalimentaire avec des solutions logistiques adaptées et un réseau de distribution étendu sur toute la sous-région.",
-    cta: "En savoir plus",
-    to: "/contact",
+    cta: "Découvrir cette activité",
+    to: "/activites/agroalimentaire",
   },
   {
     title: "Transport de marchandises",
     image: IMAGES.truck,
     text: "Notre flotte et notre réseau de partenaires assurent le transport routier national et international, le stockage et le suivi de vos marchandises, dans le respect des délais et en toute sécurité.",
-    cta: "Nos solutions transport",
-    to: "/contact",
+    cta: "Découvrir cette activité",
+    to: "/activites/transport-marchandises",
   },
   {
     title: "Commerce général",
     image: IMAGES.cargo2,
     text: "Import-export, sourcing et distribution de biens et services pour les secteurs public et privé. STMP Agri est votre partenaire de confiance pour vos opérations commerciales à l'international.",
-    cta: "Nous contacter",
-    to: "/contact",
+    cta: "Découvrir cette activité",
+    to: "/activites/commerce-general",
   },
 ];
 
@@ -99,7 +99,7 @@ function Hero() {
               data-testid="hero-discover-btn"
               className="h-12 px-7 text-base bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white"
             >
-              <Link to="/#metiers">
+              <Link to="/activites">
                 Découvrir nos activités <ArrowRight className="h-5 w-5 ml-2" />
               </Link>
             </Button>

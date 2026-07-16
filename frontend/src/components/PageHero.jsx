@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { resolveImageUrl } from "@/lib/media";
 
 export default function PageHero({ title, subtitle, image, crumb }) {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
-        <img src={image} alt="" className="h-full w-full object-cover" />
+        <img src={resolveImageUrl(image)} alt="" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#08160c]/94 via-[#0b1f10]/85 to-[#0b1f10]/62" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#08160c]/75 via-transparent to-transparent" />
       </div>

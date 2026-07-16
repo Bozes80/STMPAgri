@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import api from "@/lib/api";
 import { IMAGES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 export default function Realisations() {
   const { data = [], isLoading } = useQuery({
@@ -38,7 +39,7 @@ export default function Realisations() {
                   >
                     <div className="overflow-hidden aspect-[16/10]">
                       <img
-                        src={r.image}
+                        src={resolveImageUrl(r.image)}
                         alt={r.title}
                         loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

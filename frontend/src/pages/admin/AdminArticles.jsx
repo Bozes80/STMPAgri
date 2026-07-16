@@ -24,7 +24,7 @@ export default function AdminArticles() {
         { name: "category", label: "Catégorie", type: "select", options },
         { name: "excerpt", label: "Résumé", type: "textarea", rows: 2 },
         { name: "content", label: "Contenu de l'article", type: "textarea", rows: 8, placeholder: "Séparez les paragraphes par des retours à la ligne." },
-        { name: "image", label: "URL de l'image", type: "text", placeholder: "https://…" },
+        { name: "image", label: "Image de l'article", type: "image" },
         { name: "author", label: "Auteur", type: "text" },
         { name: "published", label: "Publier l'article", type: "checkbox", hint: "Visible sur le site" },
       ]}

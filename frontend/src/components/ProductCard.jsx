@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 const catLabel = (v) => PRODUCT_CATEGORIES.find((c) => c.value === v)?.label || v;
 
@@ -15,7 +16,7 @@ export default function ProductCard({ product }) {
     >
       <Link to={`/produits/${product.id}`} className="block overflow-hidden aspect-[4/3]">
         <img
-          src={product.image}
+          src={resolveImageUrl(product.image)}
           alt={product.name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

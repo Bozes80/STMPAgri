@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import CrudManager from "@/components/admin/CrudManager";
+import { resolveImageUrl } from "@/lib/media";
 
 export default function AdminRealisations() {
   return (
@@ -15,13 +16,13 @@ export default function AdminRealisations() {
         { name: "title", label: "Titre", type: "text" },
         { name: "category", label: "Catégorie", type: "text", placeholder: "logistique, import, partenariat…" },
         { name: "description", label: "Description", type: "textarea" },
-        { name: "image", label: "URL de l'image", type: "text", placeholder: "https://…" },
+        { name: "image", label: "Image de la réalisation", type: "image" },
         { name: "location", label: "Lieu", type: "text" },
         { name: "year", label: "Année", type: "text" },
         { name: "order", label: "Ordre d'affichage", type: "number" },
       ]}
       columns={[
-        { header: "Image", render: (r) => <img src={r.image} alt="" className="h-11 w-16 rounded-md object-cover" /> },
+        { header: "Image", render: (r) => <img src={resolveImageUrl(r.image)} alt="" className="h-11 w-16 rounded-md object-cover" /> },
         { header: "Titre", render: (r) => <span className="font-medium line-clamp-1">{r.title}</span> },
         { header: "Catégorie", render: (r) => <Badge variant="secondary" className="capitalize">{r.category}</Badge> },
         { header: "Année", render: (r) => <span className="text-sm text-muted-foreground">{r.year || "—"}</span> },

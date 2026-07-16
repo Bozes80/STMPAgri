@@ -14,7 +14,7 @@ export default function AdminPartners() {
       fields={[
         { name: "name", label: "Nom du partenaire", type: "text" },
         { name: "type", label: "Type", type: "text", placeholder: "Fournisseur, Coopérative, ONG…" },
-        { name: "logo", label: "URL du logo (optionnel)", type: "text", placeholder: "https://…" },
+        { name: "logo", label: "Logo du partenaire (optionnel)", type: "image" },
         { name: "order", label: "Ordre d'affichage", type: "number" },
       ]}
       columns={[

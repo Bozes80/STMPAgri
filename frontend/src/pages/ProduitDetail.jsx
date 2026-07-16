@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import api from "@/lib/api";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 const catLabel = (v) => PRODUCT_CATEGORIES.find((c) => c.value === v)?.label || v;
 
@@ -46,7 +47,7 @@ export default function ProduitDetail() {
 
         <div className="grid lg:grid-cols-2 gap-12">
           <div className="overflow-hidden rounded-2xl border border-border">
-            <img src={product.image} alt={product.name} className="w-full aspect-square object-cover" />
+            <img src={resolveImageUrl(product.image)} alt={product.name} className="w-full aspect-square object-cover" />
           </div>
 
           <div>

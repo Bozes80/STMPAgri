@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/components/ArticleCard";
 import api from "@/lib/api";
 import { ARTICLE_CATEGORIES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 const catLabel = (v) => ARTICLE_CATEGORIES.find((c) => c.value === v)?.label || v;
 
@@ -36,7 +37,7 @@ export default function ArticleDetail() {
   return (
     <article className="pb-20">
       <div className="relative h-[42vh] min-h-[320px] overflow-hidden">
-        <img src={article.image} alt={article.title} className="h-full w-full object-cover" />
+        <img src={resolveImageUrl(article.image)} alt={article.title} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#08160c]/95 via-[#08160c]/50 to-transparent" />
         <div className="container-stmp absolute inset-x-0 bottom-0 z-10 pb-10">
           <nav className="flex items-center gap-1.5 text-sm text-white/70 mb-4">

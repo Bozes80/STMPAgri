@@ -3,6 +3,7 @@ import { ArrowUpRight, CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ARTICLE_CATEGORIES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 const catLabel = (v) => ARTICLE_CATEGORIES.find((c) => c.value === v)?.label || v;
 
@@ -26,7 +27,7 @@ export default function ArticleCard({ article }) {
     >
       <Link to={`/actualites/${article.slug}`} className="block overflow-hidden aspect-[16/10]">
         <img
-          src={article.image}
+          src={resolveImageUrl(article.image)}
           alt={article.title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

@@ -18,6 +18,8 @@ import Partenaires from "@/pages/Partenaires";
 import RSE from "@/pages/RSE";
 import Contact from "@/pages/Contact";
 import Devis from "@/pages/Devis";
+import Activites from "@/pages/Activites";
+import ActiviteDetail from "@/pages/ActiviteDetail";
 
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminLayout from "@/pages/admin/AdminLayout";
@@ -41,6 +43,8 @@ function App() {
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/metiers/:key" element={<MetierDetail />} />
+              <Route path="/activites" element={<Activites />} />
+              <Route path="/activites/:key" element={<ActiviteDetail />} />
               <Route path="/produits" element={<Produits />} />
               <Route path="/produits/:id" element={<ProduitDetail />} />
               <Route path="/realisations" element={<Realisations />} />

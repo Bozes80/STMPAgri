@@ -5,7 +5,7 @@ import os
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends, Response
+from fastapi import FastAPI, APIRouter, Request, HTTPException, Depends, Response, UploadFile, File
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
@@ -19,6 +19,7 @@ import jwt
 import re
 
 import email_service
+import storage_service
 
 # ------------------------------------------------------------------ DB
 mongo_url = os.environ['MONGO_URL']
@@ -537,6 +538,64 @@ async def delete_quote(item_id: str, user: dict = Depends(get_current_user)):
 async def admin_newsletter(user: dict = Depends(get_current_user)):
     return await db.newsletter.find({}, {"_id": 0}).sort("created_at", -1).to_list(5000)
 
+# ------------------------------------------------------------------ Uploads / Files
+_MIME_BY_EXT = {
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+    "gif": "image/gif", "webp": "image/webp", "svg": "image/svg+xml",
+    "pdf": "application/pdf",
+}
+_ALLOWED_IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "webp", "svg"}
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+@api_router.post("/admin/upload")
+async def admin_upload(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload d'une image dans le stockage objet. Renvoie une URL relative
+    servie par l'API (`/api/files/<path>`) à enregistrer sur l'entité."""
+    filename = file.filename or "file"
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in _ALLOWED_IMAGE_EXTS:
+        raise HTTPException(status_code=400, detail=f"Extension non autorisée : .{ext}")
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Fichier trop volumineux (max 10 Mo).")
+    content_type = file.content_type or _MIME_BY_EXT.get(ext, "application/octet-stream")
+    file_id = new_id()
+    path = f"{storage_service.APP_NAME}/uploads/{file_id}.{ext}"
+    try:
+        result = await storage_service.put_object(path, data, content_type)
+    except Exception as e:  # noqa: BLE001
+        logger.error("Upload storage échec : %s", str(e))
+        raise HTTPException(status_code=502, detail="Échec de l'upload vers le stockage.")
+    stored_path = result.get("path", path)
+    await db.files.insert_one({
+        "id": file_id,
+        "storage_path": stored_path,
+        "original_filename": filename,
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "uploaded_by": user["email"],
+        "created_at": now_iso(),
+    })
+    return {"url": f"/api/files/{stored_path}", "path": stored_path, "size": result.get("size", len(data))}
+
+@api_router.get("/files/{path:path}")
+async def download_file(path: str):
+    """Sert un fichier stocké. Public (les images doivent être visibles sur le site)."""
+    record = await db.files.find_one({"storage_path": path, "is_deleted": False}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="Fichier introuvable.")
+    try:
+        data, content_type = await storage_service.get_object(path)
+    except Exception as e:  # noqa: BLE001
+        logger.error("Download storage échec : %s", str(e))
+        raise HTTPException(status_code=502, detail="Échec de la récupération du fichier.")
+    return Response(
+        content=data,
+        media_type=record.get("content_type") or content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
+
 # ------------------------------------------------------------------ Register router + CORS
 app.include_router(api_router)
 app.add_middleware(
@@ -584,6 +643,10 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await seed_admin()
     await seed_content()
+    try:
+        await storage_service.init_storage()
+    except Exception as e:  # noqa: BLE001
+        logger.error("Storage init échec (upload indisponible) : %s", str(e))
     logger.info("STMP Agri API ready")
 
 @app.on_event("shutdown")

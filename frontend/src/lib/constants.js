@@ -32,17 +32,138 @@ export const COMPANY = {
     "https://www.google.com/maps?q=5.3012616,-4.0091536&z=17&output=embed",
 };
 
-export const NAV_LINKS = [
+export const NAV_LINKS_PRIMARY = [
   { label: "Accueil", to: "/" },
   { label: "Nos métiers", to: "/#metiers" },
-  { label: "Produits", to: "/produits" },
-  { label: "Réalisations", to: "/realisations" },
+  { label: "Nos activités", to: "/activites", children: [] /* rempli dynamiquement depuis ACTIVITES */ },
+  { label: "Nos produits", to: "/produits" },
+  { label: "Nos réalisations", to: "/realisations" },
   { label: "Actualités", to: "/actualites" },
+  { label: "Contact", to: "/contact" },
+];
+
+export const NAV_LINKS_SECONDARY = [
   { label: "Partenaires", to: "/partenaires" },
   { label: "Certifications", to: "/certifications" },
   { label: "RSE", to: "/rse" },
-  { label: "Contact", to: "/contact" },
 ];
+
+// Rétrocompatibilité pour d'anciens imports (footer, search, mobile fallback)
+export const NAV_LINKS = [
+  ...NAV_LINKS_PRIMARY.filter((l) => l.label !== "Nos activités"),
+  { label: "Nos activités", to: "/activites" },
+  ...NAV_LINKS_SECONDARY,
+];
+
+export const ACTIVITES = [
+  {
+    key: "achat-vente-engrais",
+    title: "Achat et vente d'engrais",
+    tagline: "NPK, Urée, KCL, Kieserite : la nutrition qui booste vos rendements.",
+    icon: "Sprout",
+    image: "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmZXJ0aWxpemVyJTIwcGxhbnQlMjBzYWNrcyUyMGFncmljdWx0dXJlfGVufDB8fHx8MTc4Mzk1NTg5OHww&ixlib=rb-4.1.0&q=85",
+    teaser:
+      "STMP Agri sélectionne et distribue des engrais de qualité — NPK, Urée, KCL, Kieserite — pour optimiser la nutrition de vos cultures et maximiser vos rendements.",
+    relatedCategory: "engrais",
+  },
+  {
+    key: "produits-phytosanitaires",
+    title: "Vente de produits phytosanitaires",
+    tagline: "Protéger vos cultures, en toute conformité.",
+    icon: "ShieldCheck",
+    image: "https://images.pexels.com/photos/37965300/pexels-photo-37965300.jpeg?auto=compress&cs=tinysrgb&w=1400",
+    teaser:
+      "Herbicides, insecticides et fongicides homologués et conformes aux normes phytosanitaires en vigueur, pour la protection des cultures et la sécurité des opérateurs.",
+    relatedCategory: "herbicides",
+  },
+  {
+    key: "agroalimentaire",
+    title: "Distribution de produits agroalimentaires",
+    tagline: "De la valorisation à la distribution.",
+    icon: "Factory",
+    image: "https://images.unsplash.com/photo-1651525669944-00de65d3b8a5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmb29kJTIwcHJvY2Vzc2luZyUyMGFncm8lMjBpbmR1c3RyeXxlbnwwfHx8fDE3ODM5NTU4OTh8MA&ixlib=rb-4.1.0&q=85",
+    teaser:
+      "STMP Agri accompagne la filière agroalimentaire avec des solutions logistiques adaptées et un réseau de distribution étendu sur toute la sous-région.",
+  },
+  {
+    key: "transport-marchandises",
+    title: "Transport de marchandises",
+    tagline: "Une logistique maîtrisée, du départ à la livraison.",
+    icon: "Truck",
+    image: "https://images.unsplash.com/photo-1670509295484-df0c2512fec4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxjb21tZXJjaWFsJTIwdHJhbnNwb3J0JTIwdHJ1Y2slMjBoaWdod2F5fGVufDB8fHx8MTc4Mzk1NTg4M3ww&ixlib=rb-4.1.0&q=85",
+    teaser:
+      "Notre flotte et notre réseau de partenaires assurent le transport routier national et international, le stockage et le suivi de vos marchandises, en toute sécurité.",
+  },
+  {
+    key: "commerce-general",
+    title: "Commerce général",
+    tagline: "Un partenaire de confiance pour vos achats et ventes.",
+    icon: "Store",
+    image: "https://images.unsplash.com/photo-1678182451047-196f22a4143e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwzfHxjYXJnbyUyMHNoaXAlMjBjb250YWluZXJzJTIwcG9ydHxlbnwwfHx8fDE3ODM5NTU4ODR8MA&ixlib=rb-4.1.0&q=85",
+    teaser:
+      "Import-export, sourcing et distribution de biens et services pour les secteurs public et privé, avec réactivité et transparence.",
+  },
+];
+
+// Contenu de démonstration détaillé pour chaque page /activites/:key
+// (à remplacer par le contenu final fourni par STMP Agri).
+export const ACTIVITE_DETAILS = {
+  "achat-vente-engrais": {
+    intro:
+      "STMP Agri sélectionne, importe et distribue une gamme complète d'engrais minéraux (NPK, Urée, KCL, Kieserite) et de fertilisants organo-minéraux pour l'ensemble des cultures vivrières et de rente.\nGrâce à un sourcing rigoureux et à un réseau logistique maîtrisé, nous garantissons des produits conformes aux normes, disponibles au bon moment et au meilleur rapport qualité-prix.",
+    features: [
+      "Engrais de fond et de couverture (NPK, Urée 46% N, KCL 60%, Kieserite)",
+      "Fertilisants organo-minéraux et amendements calcaires",
+      "Conditionnements adaptés : sacs de 25 kg et 50 kg",
+      "Conseil agronomique et plans de fertilisation sur mesure",
+      "Livraison sur tout le territoire ivoirien et la sous-région",
+    ],
+  },
+  "produits-phytosanitaires": {
+    intro:
+      "STMP Agri distribue des solutions phytosanitaires — herbicides, insecticides et fongicides — homologuées et conformes aux réglementations du Comité Sanitaire Phytosanitaire.\nNous accompagnons les producteurs par des formations aux bonnes pratiques d'application, afin de garantir l'efficacité des traitements tout en préservant la santé des opérateurs et l'environnement.",
+    features: [
+      "Herbicides sélectifs et totaux homologués",
+      "Insecticides systémiques, de contact et biologiques",
+      "Fongicides préventifs et curatifs",
+      "Conformité stricte aux normes CSP",
+      "Formation aux bonnes pratiques d'application",
+    ],
+  },
+  "agroalimentaire": {
+    intro:
+      "STMP Agri intervient sur l'ensemble de la chaîne agroalimentaire : valorisation, conditionnement et distribution de produits agricoles vers les marchés locaux et régionaux.\nNous contribuons à créer de la valeur ajoutée locale tout en respectant les standards de sécurité sanitaire (HACCP) et de traçabilité.",
+    features: [
+      "Valorisation et transformation des productions agricoles",
+      "Conditionnement adapté aux circuits B2B",
+      "Distribution vers les marchés régionaux et sous-régionaux",
+      "Maîtrise de la sécurité sanitaire (HACCP)",
+      "Partenariats avec coopératives et industriels",
+    ],
+  },
+  "transport-marchandises": {
+    intro:
+      "Notre offre logistique combine transport routier national et international, stockage et suivi de vos marchandises.\nNous garantissons le respect strict des délais et la sécurité des opérations, quel que soit le volume, la destination ou le type de fret.",
+    features: [
+      "Transport routier national et international",
+      "Solutions de stockage et d'entreposage sécurisé",
+      "Suivi et traçabilité des marchandises en temps réel",
+      "Logistique multimodale (port, route)",
+      "Flotte propre et réseau de partenaires certifiés",
+    ],
+  },
+  "commerce-general": {
+    intro:
+      "Au-delà de l'agriculture, STMP Agri assure l'approvisionnement, le sourcing et la distribution de biens et services pour les secteurs public et privé.\nNotre expertise commerciale et notre réseau international nous permettent de répondre à des besoins variés, avec réactivité, transparence et compétitivité.",
+    features: [
+      "Distribution de biens et services multi-secteurs",
+      "Approvisionnement pour le secteur public et privé",
+      "Négoce et sourcing international",
+      "Réactivité et transparence commerciale",
+      "Accompagnement personnalisé de chaque client",
+    ],
+  },
+};
 
 export const SERVICES = [
   { icon: Ship, key: "import-export", title: "Import-export", text: "Gestion des opérations internationales, formalités douanières, sourcing et logistique." },

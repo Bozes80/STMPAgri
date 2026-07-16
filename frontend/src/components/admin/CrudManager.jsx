@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Upload, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,120 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import api, { formatApiError } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/media";
+
+function ImageField({ value, onChange, name, placeholder, testid }) {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux (max 10 Mo).");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/admin/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      onChange(data.url);
+      toast.success("Image téléversée avec succès.");
+    } catch (err) {
+      toast.error(formatApiError(err.response?.data?.detail));
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const preview = resolveImageUrl(value);
+  return (
+    <div className="mt-1.5 space-y-2">
+      {preview ? (
+        <div className="flex items-start gap-3">
+          <img
+            src={preview}
+            alt="Aperçu"
+            className="h-24 w-24 rounded-lg object-cover border border-border"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground truncate" title={value}>{value}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading}
+                data-testid={`${testid}-upload-btn`}
+              >
+                {uploading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Upload className="h-4 w-4 mr-1.5" />}
+                {uploading ? "Téléversement…" : "Remplacer"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(preview, "_blank")}
+                data-testid={`${testid}-view-btn`}
+              >
+                <ExternalLink className="h-4 w-4 mr-1.5" /> Voir
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange("")}
+                data-testid={`${testid}-clear-btn`}
+                className="text-destructive hover:text-destructive"
+              >
+                Retirer
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          data-testid={`${testid}-upload-btn`}
+          className="w-full h-24 border-dashed"
+        >
+          {uploading ? (
+            <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Téléversement…</>
+          ) : (
+            <><Upload className="h-5 w-5 mr-2" /> Téléverser une image (JPG, PNG, WebP)</>
+          )}
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+        onChange={handleFile}
+        className="hidden"
+        data-testid={`${testid}-file-input`}
+      />
+      <Input
+        id={name}
+        type="text"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || "https://… ou téléversez ci-dessus"}
+        data-testid={`${testid}-url-input`}
+        className="text-xs"
+      />
+      <p className="text-xs text-muted-foreground">Vous pouvez téléverser un fichier ou coller une URL externe.</p>
+    </div>
+  );
+}
 
 export default function CrudManager({
   title, description, queryKey, listUrl, mutateUrl, fields, columns, emptyItem, testid,
@@ -178,6 +292,14 @@ export default function CrudManager({
                     />
                     <span className="text-sm text-muted-foreground">{f.hint || "Oui"}</span>
                   </div>
+                ) : f.type === "image" ? (
+                  <ImageField
+                    value={formState[f.name] ?? ""}
+                    onChange={(v) => setField(f.name, v)}
+                    name={f.name}
+                    placeholder={f.placeholder}
+                    testid={`${testid}-field-${f.name}`}
+                  />
                 ) : (
                   <Input
                     id={f.name}
