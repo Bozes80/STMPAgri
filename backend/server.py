@@ -331,6 +331,24 @@ class QuoteInput(BaseModel):
 class NewsletterInput(BaseModel):
     email: EmailStr
 
+class Social(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    name: str
+    url: str
+    icon_url: str = ""
+    is_active: bool = True
+    order: int = 0
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
+
+class SocialInput(BaseModel):
+    name: str
+    url: str
+    icon_url: str = ""
+    is_active: bool = True
+    order: int = 0
+
 # ------------------------------------------------------------------ Auth routes
 @api_router.post("/auth/login")
 async def login(payload: LoginInput, response: Response):
@@ -476,6 +494,87 @@ async def subscribe_newsletter(payload: NewsletterInput):
         return {"message": "Vous êtes déjà inscrit à notre newsletter."}
     await db.newsletter.insert_one({"id": new_id(), "email": email, "created_at": now_iso()})
     return {"message": "Merci ! Votre inscription à la newsletter est confirmée."}
+
+# ------------------------------------------------------------------ Réseaux sociaux (public + admin)
+@api_router.get("/socials")
+async def list_socials_public():
+    """Retourne la liste des réseaux sociaux actifs, triés par order."""
+    items = await db.socials.find({"is_active": True}, {"_id": 0}).sort([("order", 1), ("created_at", 1)]).to_list(100)
+    return items
+
+@api_router.get("/admin/socials")
+async def list_socials_admin(user: dict = Depends(get_current_user)):
+    """Retourne tous les réseaux (actifs et inactifs)."""
+    items = await db.socials.find({}, {"_id": 0}).sort([("order", 1), ("created_at", 1)]).to_list(100)
+    return items
+
+@api_router.post("/admin/socials")
+async def create_social(payload: SocialInput, user: dict = Depends(get_current_user)):
+    name = (payload.name or "").strip()
+    url = (payload.url or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Le nom du réseau est requis.")
+    if not url:
+        raise HTTPException(status_code=400, detail="L'URL du réseau est requise.")
+    if not re.match(r"^(https?:)?//", url) and not url.startswith("mailto:") and not url.startswith("tel:"):
+        raise HTTPException(status_code=400, detail="L'URL doit commencer par http:// ou https:// (ou mailto:/tel:).")
+    max_order_doc = await db.socials.find_one({}, sort=[("order", -1)])
+    next_order = payload.order if payload.order else ((max_order_doc.get("order", 0) + 1) if max_order_doc else 0)
+    doc = Social(
+        name=name, url=url, icon_url=payload.icon_url or "",
+        is_active=payload.is_active, order=next_order,
+    ).model_dump()
+    await db.socials.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.patch("/admin/socials/{item_id}")
+async def update_social(item_id: str, body: dict, user: dict = Depends(get_current_user)):
+    existing = await db.socials.find_one({"id": item_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Réseau introuvable.")
+    updates: dict = {}
+    if "name" in body:
+        n = (body.get("name") or "").strip()
+        if not n:
+            raise HTTPException(status_code=400, detail="Le nom ne peut pas être vide.")
+        updates["name"] = n
+    if "url" in body:
+        u = (body.get("url") or "").strip()
+        if not u:
+            raise HTTPException(status_code=400, detail="L'URL ne peut pas être vide.")
+        if not re.match(r"^(https?:)?//", u) and not u.startswith("mailto:") and not u.startswith("tel:"):
+            raise HTTPException(status_code=400, detail="L'URL doit commencer par http:// ou https:// (ou mailto:/tel:).")
+        updates["url"] = u
+    if "icon_url" in body:
+        updates["icon_url"] = str(body.get("icon_url") or "")
+    if "is_active" in body:
+        updates["is_active"] = bool(body.get("is_active"))
+    if "order" in body:
+        updates["order"] = int(body.get("order") or 0)
+    if not updates:
+        raise HTTPException(status_code=400, detail="Aucun champ modifiable fourni.")
+    updates["updated_at"] = now_iso()
+    await db.socials.update_one({"id": item_id}, {"$set": updates})
+    existing.update(updates)
+    return existing
+
+@api_router.delete("/admin/socials/{item_id}")
+async def delete_social(item_id: str, user: dict = Depends(get_current_user)):
+    res = await db.socials.delete_one({"id": item_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Réseau introuvable.")
+    return {"message": "Réseau supprimé."}
+
+@api_router.post("/admin/socials/reorder")
+async def reorder_socials(body: dict, user: dict = Depends(get_current_user)):
+    """Body: {ids: [id_in_new_order, …]}"""
+    ids = body.get("ids") or []
+    if not isinstance(ids, list):
+        raise HTTPException(status_code=400, detail="Corps invalide : 'ids' doit être une liste.")
+    for idx, item_id in enumerate(ids):
+        await db.socials.update_one({"id": item_id}, {"$set": {"order": idx, "updated_at": now_iso()}})
+    return {"updated": len(ids)}
 
 # ------------------------------------------------------------------ Admin - dashboard stats
 @api_router.get("/admin/overview")
@@ -1179,6 +1278,42 @@ async def seed_content():
         await db.partners.insert_many([Partner(**p).model_dump() for p in SEED_PARTNERS])
     if await db.certifications.count_documents({}) == 0:
         await db.certifications.insert_many([Certification(**c).model_dump() for c in SEED_CERTIFICATIONS])
+    if await db.socials.count_documents({}) == 0:
+        # Icônes SVG monochromes blanches (paths simplifiés des logos officiels), encodées en data-url.
+        # L'utilisateur pourra les remplacer via la médiathèque plus tard.
+        SVG_FB = (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'>"
+            "<path d='M13.5 21v-7.5H16l.5-3H13.5V8.6c0-.9.3-1.6 1.7-1.6H16.5V4.3C16.2 4.2 15.2 4 14 4c-2.6 0-4.3 1.6-4.3 4.4v2.1H7v3h2.7V21h3.8z'/></svg>"
+        )
+        SVG_LI = (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'>"
+            "<path d='M4.98 3.5c0 1.38-1.12 2.5-2.5 2.5S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.24 8h4.5V23H.24V8zm7.5 0h4.3v2.05h.06c.6-1.13 2.07-2.32 4.26-2.32 4.55 0 5.4 3 5.4 6.9V23h-4.5v-6.6c0-1.58-.03-3.62-2.2-3.62-2.2 0-2.54 1.72-2.54 3.5V23h-4.5V8z'/></svg>"
+        )
+        SVG_IG = (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+            "<rect x='3' y='3' width='18' height='18' rx='5'/><circle cx='12' cy='12' r='4'/><circle cx='17.5' cy='6.5' r='0.9' fill='%23ffffff' stroke='none'/></svg>"
+        )
+        SVG_WA = (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'>"
+            "<path d='M12.05 2C6.5 2 2.04 6.44 2.04 11.94c0 1.94.55 3.75 1.5 5.29L2 22l4.9-1.53c1.48.81 3.18 1.27 4.99 1.28h.01c5.53 0 10-4.45 10-9.95 0-2.66-1.04-5.15-2.94-7.03A9.86 9.86 0 0012.05 2zm5.83 14.13c-.25.7-1.44 1.34-2 1.42-.51.08-1.17.11-1.88-.12-.43-.13-1-.31-1.72-.62-3.02-1.3-4.98-4.32-5.13-4.52-.15-.2-1.24-1.63-1.24-3.11 0-1.48.78-2.2 1.05-2.5.28-.3.6-.37.8-.37.2 0 .4 0 .58.01.19.01.44-.07.68.52.25.61.85 2.09.92 2.24.08.15.13.32.02.52-.1.2-.15.32-.3.5-.15.17-.32.39-.46.52-.15.13-.31.28-.13.55.17.28.77 1.27 1.66 2.05 1.14 1 2.1 1.32 2.4 1.47.3.15.47.13.65-.08.18-.2.75-.87.95-1.17.2-.3.4-.25.66-.15.28.1 1.77.83 2.07.98.3.15.5.22.58.35.07.12.07.7-.17 1.38z'/></svg>"
+        )
+        SVG_TW = (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'>"
+            "<path d='M18.244 2H21l-6.52 7.454L22 22h-6.812l-4.79-6.253L4.8 22H2.045l6.977-7.973L2 2h6.914l4.334 5.734L18.244 2zm-1.194 18h1.522L7.05 4H5.412l11.638 16z'/></svg>"
+        )
+        seed_socials = [
+            {"name": "Facebook",  "url": "https://facebook.com",  "icon_url": SVG_FB, "is_active": True, "order": 0},
+            {"name": "LinkedIn",  "url": "https://linkedin.com",  "icon_url": SVG_LI, "is_active": True, "order": 1},
+            {"name": "Instagram", "url": "https://instagram.com", "icon_url": SVG_IG, "is_active": True, "order": 2},
+            {"name": "WhatsApp",  "url": "https://wa.me/2250707070707", "icon_url": SVG_WA, "is_active": True, "order": 3},
+        ]
+        await db.socials.insert_many([Social(**s).model_dump() for s in seed_socials])
+        _ = SVG_TW  # placeholder pour ajout Twitter/X plus tard depuis l'admin
     if await db.site_stats.find_one({"_id": "singleton"}) is None:
         await db.site_stats.insert_one({"_id": "singleton", **SEED_STATS})
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Tag, FileEdit, ListOrdered, Newspaper, Building2, ShieldCheck,
-  Handshake, Mail, FileText, Send, LogOut, ExternalLink, Menu, X, Images,
+  Handshake, Mail, FileText, Send, LogOut, ExternalLink, Menu, X, Images, Share2,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/admin/pages", label: "Pages", icon: FileEdit },
   { to: "/admin/menus", label: "Menus", icon: ListOrdered },
   { to: "/admin/medias", label: "Médiathèque", icon: Images },
+  { to: "/admin/reseaux", label: "Réseaux sociaux", icon: Share2 },
   { to: "/admin/produits", label: "Produits", icon: Package },
   { to: "/admin/categories", label: "Catégories", icon: Tag },
   { to: "/admin/articles", label: "Actualités", icon: Newspaper },

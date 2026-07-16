@@ -39,6 +39,7 @@ import AdminPages from "@/pages/admin/AdminPages";
 import PageEditor from "@/pages/admin/PageEditor";
 import AdminMenus from "@/pages/admin/AdminMenus";
 import AdminMedia from "@/pages/admin/AdminMedia";
+import AdminSocials from "@/pages/admin/AdminSocials";
 
 function App() {
   return (
@@ -81,6 +82,7 @@ function App() {
                 <Route path="pages/:id" element={<PageEditor />} />
                 <Route path="menus" element={<AdminMenus />} />
                 <Route path="medias" element={<AdminMedia />} />
+                <Route path="reseaux" element={<AdminSocials />} />
                 <Route path="produits" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="articles" element={<AdminArticles />} />

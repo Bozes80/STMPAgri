@@ -1,19 +1,15 @@
 import { Link } from "react-router-dom";
-import { Facebook, Linkedin, Instagram, Twitter, MapPin, Phone, Smartphone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Smartphone, Mail, Clock } from "lucide-react";
 import Logo from "@/components/Logo";
 import Newsletter from "@/components/Newsletter";
 import { COMPANY, SERVICES } from "@/lib/constants";
 import { useMenu } from "@/hooks/useMenu";
-
-const socials = [
-  { icon: Facebook, href: COMPANY.social.facebook, label: "Facebook" },
-  { icon: Linkedin, href: COMPANY.social.linkedin, label: "LinkedIn" },
-  { icon: Instagram, href: COMPANY.social.instagram, label: "Instagram" },
-  { icon: Twitter, href: COMPANY.social.twitter, label: "Twitter" },
-];
+import { useSocials } from "@/hooks/useSocials";
+import { resolveImageUrl } from "@/lib/media";
 
 export default function Footer() {
   const { items: footerItems } = useMenu("footer");
+  const { socials } = useSocials();
   return (
     <footer className="bg-[#111C15] text-white/80" data-testid="site-footer">
       <div className="container-stmp py-16 grid gap-12 md:grid-cols-2 lg:grid-cols-4">
@@ -23,21 +19,33 @@ export default function Footer() {
             {COMPANY.fullName}. Des solutions intégrées pour l'agriculture, la logistique et le commerce international.
           </p>
           <p className="mt-4 font-heading text-[#F2D400] italic">« {COMPANY.slogan} »</p>
-          <div className="mt-6 flex gap-3">
-            {socials.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                data-testid={`footer-social-${s.label.toLowerCase()}`}
-                className="h-10 w-10 grid place-items-center rounded-full bg-white/5 hover:bg-[#0E7A3A] transition-colors"
-              >
-                <s.icon className="h-4 w-4" />
-              </a>
-            ))}
-          </div>
+          {socials.length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-3" data-testid="footer-socials">
+              {socials.map((s) => (
+                <a
+                  key={s.id}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.name}
+                  data-testid={`footer-social-${s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                  className="h-10 w-10 grid place-items-center rounded-full bg-white/5 hover:bg-[#0E7A3A] transition-colors overflow-hidden"
+                  title={s.name}
+                >
+                  {s.icon_url ? (
+                    <img
+                      src={resolveImageUrl(s.icon_url)}
+                      alt={s.name}
+                      className="h-4 w-4 object-contain"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase">{s.name.slice(0, 2)}</span>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>

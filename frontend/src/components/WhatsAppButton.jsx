@@ -1,13 +1,26 @@
 import { MessageCircle } from "lucide-react";
 import { COMPANY } from "@/lib/constants";
+import { useSocials } from "@/hooks/useSocials";
 
 export default function WhatsAppButton() {
+  const { socials } = useSocials();
+  // Cherche un réseau nommé "WhatsApp" (insensible à la casse), actif.
+  const wa = socials.find((s) => (s.name || "").toLowerCase().includes("whatsapp"));
+  const href = wa?.url || COMPANY.whatsappHref;
+  if (!href) return null;
+
   const msg = encodeURIComponent(
     "Bonjour STMP Agri, je souhaite obtenir des informations.",
   );
+  // N'ajoute ?text= que si l'URL supporte le paramètre (wa.me / api.whatsapp.com)
+  const supportsText = /wa\.me|whatsapp\.com/i.test(href);
+  const finalHref = supportsText
+    ? `${href}${href.includes("?") ? "&" : "?"}text=${msg}`
+    : href;
+
   return (
     <a
-      href={`${COMPANY.whatsappHref}?text=${msg}`}
+      href={finalHref}
       target="_blank"
       rel="noopener noreferrer"
       data-testid="whatsapp-float-btn"
