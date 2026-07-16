@@ -85,7 +85,15 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - **Route publique dynamique** `/p/:slug` : PageHero + breadcrumb + titre + résumé + contenu HTML + galerie + balises SEO complètes via `react-helmet-async` (title, description, keywords, robots, canonical, Open Graph, Twitter Card).
   - **Admin UI** : sidebar « Pages » (icône FileEdit), liste avec recherche/filtre statut/tri des colonnes/actions rapides (publier, archiver, brouillon, supprimer via AlertDialog), éditeur 4 onglets (Contenu / Média / SEO / Réglages) + panneau publication latéral.
   - Testé end-to-end : **100 % backend (15/15 tests + 31/32 regression, 1 xfail préexistant) + 100 % frontend (tous testids et flux vérifiés incluant le rendu public avec balises Helmet).**
-  - Contenu de la spec en attente (Phase 2) : constructeur de menus, sélection multiple/suppression en masse, médiathèque browser, blocs custom, permissions granulaires, mot de passe/rôles, CSS/JS custom, commentaires internes.
+- **CMS Pages — Phase 2 : Menus, hiérarchie visuelle, sélection multiple** :
+  - **Constructeur de menus** — nouvelle collection MongoDB `menus`, page admin `/admin/menus` avec deux onglets (Menu principal + Menu pied de page). Chaque menu : nom + liste d'items (label, url, target `_self`/`_blank`, icon, parent_id, order). Support des sous-éléments avec indentation visuelle. Ajout / édition / suppression via dialog. **Drag & drop** de réordonnancement (@dnd-kit). Suggestions d'URLs internes dans le formulaire. Boucles parent/enfant impossibles.
+  - Endpoints : `GET /api/menus/{location}` (public, retourne menu vide si absent), `GET /api/admin/menus[/{location}]` (admin), `PUT /api/admin/menus/{location}` (upsert).
+  - **Header + Footer publics dynamiques** — nouveaux hook `useMenu` (React Query, cache 60s). Header lit `main`, Footer lit `footer`. Items avec `children` rendus en dropdown (Nos activités → 5 activités). Fallback élégant si menu vide.
+  - Seed initial : 12 items pour le menu principal (7 top-level + 5 sous-items 'Nos activités') et 10 items pour le pied de page.
+  - **Hiérarchie visuelle des pages** — nouveau toggle Table/Arborescence sur `/admin/pages`. La vue arborescence affiche les pages en tree avec drag handle par ligne (drag & drop pour réordonner au sein d'un même parent) et sélecteur de parent inline pour reparenter (POST `/api/admin/pages/reorder`).
+  - **Sélection multiple + suppression en masse** sur la vue Table — colonne checkbox, « tout sélectionner », toolbar « Actions groupées » avec compteur et bouton « Supprimer la sélection » + AlertDialog de confirmation. Les enfants orphelins remontent à la racine.
+  - Endpoints : `POST /api/admin/pages/bulk-delete {ids}` et `POST /api/admin/pages/reorder {items: [{id, parent_id, order}]}`.
+  - Testé end-to-end : **100 % backend (18/18 nouveaux tests) + 100 % frontend (Menus + Bulk + Tree + Header/Footer dynamiques + persistance vérifiés).**
 
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).
@@ -97,7 +105,7 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 - P1 : Bascule multilingue FR/EN complète.
 - P1 : Envoi de devis PDF (le devis reste texte ; générer/joindre un PDF). Notifications e-mail : FAIT (Resend).
 - P1 : Rédiger le contenu définitif des 6 sous-rubriques « Pourquoi STMP Agri ? » et des 5 fiches d'activités.
-- **P1 : CMS Pages Phase 2** — constructeur de menus (principal/footer/perso), sélection multiple + suppression en masse, médiathèque UI, drag & drop de la hiérarchie.
+- P1 : Médiathèque UI (navigateur des uploads précédents avec grid + recherche + copier URL, sélectionnable depuis n'importe quel champ image).
 - **P2 : CMS Pages Phase 3** — blocs custom (accordéons, colonnes, boutons, vidéos, audio, shortcodes), permissions granulaires (rôles Éditeur/Auteur/Modérateur avec Lire/Créer/Modifier/Publier/Supprimer/Restaurer), pages protégées par mot de passe / rôle, CSS/JS custom + templates par page, commentaires internes par page.
 - P2 : Catalogues PDF téléchargeables + certificats PDF.
 - P2 : Widget de chat WhatsApp flottant réel (actuellement bouton avec lien statique).

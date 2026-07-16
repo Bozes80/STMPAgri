@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 
 const EMPTY = { label: "", url: "", target: "_self", icon: "", parent_id: null };
@@ -54,6 +54,9 @@ export default function MenuItemDialog({ open, onOpenChange, initial, otherItems
       <DialogContent className="max-w-lg" data-testid="menu-item-dialog">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Modifier l'élément" : "Nouvel élément"}</DialogTitle>
+          <DialogDescription>
+            Configurez le libellé, l'URL et le comportement de cet élément de menu.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>
