@@ -27,7 +27,12 @@ import {
 } from "@/lib/constants";
 
 function toTestId(label) {
-  return label.toLowerCase().replace(/\s|é|è|à/g, "-").replace(/[^a-z0-9-]/g, "");
+  return label
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
 }
 
 const linkClass =

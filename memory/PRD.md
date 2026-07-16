@@ -38,6 +38,25 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - Envois non bloquants (échec e-mail n'empêche pas l'enregistrement en base). Module : `/app/backend/email_service.py`.
   - Config `.env` : `EMERGENT_EMAIL_KEY`, `EMAIL_FROM_NAME="STMP Agri"`, `NOTIFICATION_EMAILS`.
   - Testé end-to-end (HTTP 202 sur les 4 envois + toast de succès UI).
+- **Restructuration du menu (front-office)** :
+  - Menu principal : Accueil, Nos métiers, **Nos activités (dropdown 5 items)**, Nos produits, Nos réalisations, Actualités, Contact.
+  - Menu secondaire discret « Plus » (Partenaires, Certifications, RSE).
+  - Menu mobile (Sheet) reproduit la même hiérarchie avec sous-liens indentés.
+- **Nouvelle section Nos activités** :
+  - Page d'aperçu `/activites` (5 cartes avec icônes lucide, teaser, CTA).
+  - 5 pages détaillées `/activites/:key` — clé slugifiée (achat-vente-engrais, produits-phytosanitaires, agroalimentaire, transport-marchandises, commerce-general).
+  - Chaque fiche : hero + intro + « Ce que nous vous apportons » (5 bullets) + CTA devis/produits/contact + sidebar « Nos autres activités ».
+  - Bouton hero « Découvrir nos activités » redirige vers `/activites`.
+  - La section « Nos activités » de la Home pointe vers les nouvelles fiches détaillées.
+  - Contenu de démonstration à remplacer plus tard par STMP Agri.
+- **Upload/Download images (back-office)** — stockage objet géré par Emergent :
+  - `POST /api/admin/upload` (admin auth, multipart, ≤ 10 Mo, JPG/PNG/WebP/GIF/SVG) → `{url, path, size}`.
+  - `GET /api/files/{path:path}` public, sert le fichier avec Cache-Control immutable.
+  - Composant `ImageField` dans le `CrudManager` : prévisualisation, boutons Téléverser/Remplacer/Voir/Retirer + input URL manuel.
+  - Toutes les pages admin avec image (Produits, Articles, Réalisations, Partenaires) utilisent `type: "image"`.
+  - Frontend public affiche via `resolveImageUrl` (préfixe `REACT_APP_BACKEND_URL` pour les URLs `/api/files/...`).
+  - Config `.env` : `EMERGENT_LLM_KEY`. Modules : `/app/backend/storage_service.py`, `/app/frontend/src/lib/media.js`.
+  - Testé end-to-end (upload 200 + download 200 + 29/29 pytest OK).
 
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).
@@ -48,8 +67,9 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 ## Backlog / Prochaines étapes
 - P1 : Bascule multilingue FR/EN complète.
 - P1 : Envoi de devis PDF (le devis reste texte ; générer/joindre un PDF). Notifications e-mail : FAIT (Resend).
+- P1 : Remplacer le contenu de démonstration des 5 fiches d'activités par le contenu final rédigé par STMP Agri.
 - P2 : Catalogues PDF téléchargeables + certificats PDF.
 - P2 : Widget de chat WhatsApp flottant réel (actuellement bouton avec lien statique).
-- P2 : Upload d'images dans l'admin (stockage objet) au lieu d'URL.
+- P2 : Gestion / suppression des fichiers uploadés (endpoint admin de nettoyage, garbage-collect des orphelins). Upload/Download : FAIT.
 - P2 : Remplacer les coordonnées de démonstration par les vraies (tél, WhatsApp, adresse, réseaux sociaux, Google Maps).
 - P3 : Optimisation SEO avancée (sitemap, meta par page, données structurées).
