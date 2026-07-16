@@ -431,8 +431,11 @@ async def delete_product(product_id: str, user: dict = Depends(get_current_user)
 
 # ------------------------------------------------------------------ Admin - Categories
 def _normalize_cat_value(value: str) -> str:
-    v = slugify(value)
-    if not v or v == "all":
+    raw = (value or "").strip()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Slug de catégorie invalide.")
+    v = slugify(raw)
+    if not v or v == "all" or not re.match(r"^[a-z0-9][a-z0-9-]*$", v):
         raise HTTPException(status_code=400, detail="Slug de catégorie invalide.")
     return v
 

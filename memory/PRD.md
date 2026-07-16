@@ -57,6 +57,16 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - Frontend public affiche via `resolveImageUrl` (préfixe `REACT_APP_BACKEND_URL` pour les URLs `/api/files/...`).
   - Config `.env` : `EMERGENT_LLM_KEY`. Modules : `/app/backend/storage_service.py`, `/app/frontend/src/lib/media.js`.
   - Testé end-to-end (upload 200 + download 200 + 29/29 pytest OK).
+- **Gestion des catégories de produits (back-office)** :
+  - Nouvelle collection `categories` (id, name, value/slug, description, order).
+  - Endpoints : `GET /api/categories` (public), `POST/PUT/DELETE /api/admin/categories` (admin auth).
+  - Validation : slug requis non vide, format `[a-z0-9-]+`, rejet du slug réservé `all` (400). Unicité du slug (409).
+  - Suppression **bloquée** avec message clair si des produits sont rattachés (409 : « Suppression impossible : X produit(s) rattaché(s)… »).
+  - Renommer un slug propage automatiquement le changement sur `products.category` (cascade sûre).
+  - Nouvelle page admin `/admin/categories` avec sidebar dédiée (icône Tag).
+  - Hook `useCategories`/`useCategoryLabel` (React Query, cache 5 min) — le catalogue public (filtres, badges), les cartes produits, la fiche produit, et le formulaire admin lisent désormais les catégories dynamiquement depuis l'API.
+  - Seed initial idempotent : 6 catégories créées au premier démarrage (Engrais, Fertilisants, Herbicides, Insecticides, Fongicides, Équipements agricoles).
+  - Testé end-to-end (31/32 pytest, tous les flux admin + public validés).
 
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).

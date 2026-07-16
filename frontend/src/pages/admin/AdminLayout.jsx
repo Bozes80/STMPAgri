@@ -43,7 +43,12 @@ export default function AdminLayout() {
             to={n.to}
             end={n.end}
             onClick={() => setMobileOpen(false)}
-            data-testid={`admin-nav-${n.label.toLowerCase().replace(/\s|é/g, "-")}`}
+            data-testid={`admin-nav-${n.label
+              .normalize("NFD")
+              .replace(/\p{Diacritic}/gu, "")
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, "")}`}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
