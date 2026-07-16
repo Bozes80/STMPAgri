@@ -145,6 +145,57 @@ class CategoryInput(BaseModel):
     description: Optional[str] = ""
     order: int = 0
 
+# ------------------------------------------------------------------ Page (CMS)
+class PageSeo(BaseModel):
+    meta_title: str = ""
+    meta_description: str = ""
+    meta_keywords: str = ""
+    canonical: str = ""
+    robots: str = "index,follow"
+    og_title: str = ""
+    og_description: str = ""
+    og_image: str = ""
+    twitter_card: str = "summary_large_image"
+
+class Page(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    title: str
+    slug: str = ""
+    summary: str = ""
+    content_html: str = ""
+    cover_image: str = ""
+    gallery: List[str] = []
+    icon: str = ""
+    category: str = ""
+    tags: List[str] = []
+    status: str = "draft"       # draft | published | archived
+    parent_id: Optional[str] = None
+    order: int = 0
+    show_in_main_nav: bool = False
+    author_email: str = ""
+    seo: PageSeo = Field(default_factory=PageSeo)
+    published_at: Optional[str] = None
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
+
+class PageInput(BaseModel):
+    title: str
+    slug: str = ""
+    summary: str = ""
+    content_html: str = ""
+    cover_image: str = ""
+    gallery: List[str] = []
+    icon: str = ""
+    category: str = ""
+    tags: List[str] = []
+    status: str = "draft"
+    parent_id: Optional[str] = None
+    order: int = 0
+    show_in_main_nav: bool = False
+    seo: PageSeo = Field(default_factory=PageSeo)
+    published_at: Optional[str] = None
+
 class Article(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=new_id)
@@ -481,6 +532,103 @@ async def delete_category(item_id: str, user: dict = Depends(get_current_user)):
     await db.categories.delete_one({"id": item_id})
     return {"message": "Catégorie supprimée"}
 
+# ------------------------------------------------------------------ Pages (CMS - public)
+def _clean_page(p: dict) -> dict:
+    """Retire les clés Mongo et normalise le doc pour l'API."""
+    p.pop("_id", None)
+    return p
+
+@api_router.get("/pages", response_model=List[Page])
+async def list_pages_public(nav_only: bool = False):
+    q: dict = {"status": "published"}
+    if nav_only:
+        q["show_in_main_nav"] = True
+    docs = await db.pages.find(q, {"_id": 0}).sort([("order", 1), ("title", 1)]).to_list(500)
+    return docs
+
+@api_router.get("/pages/{slug}", response_model=Page)
+async def get_page_public(slug: str):
+    doc = await db.pages.find_one({"slug": slug, "status": "published"}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Page introuvable")
+    return doc
+
+# ------------------------------------------------------------------ Pages (CMS - admin)
+async def _ensure_unique_slug(base: str, ignore_id: Optional[str] = None) -> str:
+    slug = slugify(base) or new_id()[:8]
+    q: dict = {"slug": slug}
+    if ignore_id:
+        q["id"] = {"$ne": ignore_id}
+    if await db.pages.find_one(q):
+        slug = f"{slug}-{new_id()[:6]}"
+    return slug
+
+@api_router.get("/admin/pages")
+async def admin_list_pages(user: dict = Depends(get_current_user)):
+    return await db.pages.find({}, {"_id": 0}).sort([("updated_at", -1)]).to_list(1000)
+
+@api_router.get("/admin/pages/{page_id}", response_model=Page)
+async def admin_get_page(page_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.pages.find_one({"id": page_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Page introuvable")
+    return doc
+
+@api_router.post("/admin/pages", response_model=Page)
+async def create_page(payload: PageInput, user: dict = Depends(get_current_user)):
+    data = payload.model_dump()
+    data["slug"] = await _ensure_unique_slug(data.get("slug") or data["title"])
+    if data["status"] == "published" and not data.get("published_at"):
+        data["published_at"] = now_iso()
+    data["author_email"] = user["email"]
+    page = Page(**data)
+    doc = page.model_dump()
+    await db.pages.insert_one(doc)
+    return page
+
+@api_router.put("/admin/pages/{page_id}", response_model=Page)
+async def update_page(page_id: str, payload: PageInput, user: dict = Depends(get_current_user)):
+    existing = await db.pages.find_one({"id": page_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Page introuvable")
+    data = payload.model_dump()
+    # normalisation du slug
+    desired_slug = slugify(data.get("slug") or data["title"])
+    if desired_slug != existing.get("slug"):
+        data["slug"] = await _ensure_unique_slug(desired_slug, ignore_id=page_id)
+    else:
+        data["slug"] = existing["slug"]
+    # date de publication : la fixer si passage à "published" et pas déjà définie
+    if data["status"] == "published" and not (data.get("published_at") or existing.get("published_at")):
+        data["published_at"] = now_iso()
+    data["updated_at"] = now_iso()
+    data["author_email"] = existing.get("author_email") or user["email"]
+    res = await db.pages.find_one_and_update(
+        {"id": page_id}, {"$set": data}, return_document=True)
+    return _clean_page(res)
+
+@api_router.delete("/admin/pages/{page_id}")
+async def delete_page(page_id: str, user: dict = Depends(get_current_user)):
+    r = await db.pages.delete_one({"id": page_id})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Page introuvable")
+    return {"message": "Page supprimée"}
+
+@api_router.post("/admin/pages/{page_id}/status")
+async def set_page_status(page_id: str, status: str, user: dict = Depends(get_current_user)):
+    if status not in ("draft", "published", "archived"):
+        raise HTTPException(status_code=400, detail="Statut invalide.")
+    updates: dict = {"status": status, "updated_at": now_iso()}
+    if status == "published":
+        existing = await db.pages.find_one({"id": page_id}, {"_id": 0, "published_at": 1})
+        if not (existing or {}).get("published_at"):
+            updates["published_at"] = now_iso()
+    res = await db.pages.find_one_and_update(
+        {"id": page_id}, {"$set": updates}, return_document=True)
+    if not res:
+        raise HTTPException(status_code=404, detail="Page introuvable")
+    return _clean_page(res)
+
 # ------------------------------------------------------------------ Admin - Articles
 @api_router.get("/admin/articles", response_model=List[Article])
 async def admin_list_articles(user: dict = Depends(get_current_user)):
@@ -723,6 +871,7 @@ async def seed_content():
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
+    await db.pages.create_index("slug", unique=True, sparse=True)
     await seed_admin()
     await seed_content()
     try:
