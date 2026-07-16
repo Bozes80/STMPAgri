@@ -5,8 +5,9 @@ import Reveal from "@/components/Reveal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MotifDivider } from "@/components/SectionHeading";
-import { ACTIVITES, ACTIVITE_DETAILS, PRODUCT_CATEGORIES } from "@/lib/constants";
+import { ACTIVITES, ACTIVITE_DETAILS } from "@/lib/constants";
 import { resolveImageUrl } from "@/lib/media";
+import { useCategories } from "@/hooks/useCategories";
 
 const ICONS = { Sprout, ShieldCheck, Factory, Truck, Store };
 
@@ -14,12 +15,13 @@ export default function ActiviteDetail() {
   const { key } = useParams();
   const activite = ACTIVITES.find((a) => a.key === key);
   const details = ACTIVITE_DETAILS[key];
+  const { categories } = useCategories();
   if (!activite || !details) return <Navigate to="/activites" replace />;
 
   const Icon = ICONS[activite.icon] || Package;
   const others = ACTIVITES.filter((a) => a.key !== key);
   const relatedCatLabel = activite.relatedCategory
-    ? PRODUCT_CATEGORIES.find((c) => c.value === activite.relatedCategory)?.label
+    ? categories.find((c) => c.value === activite.relatedCategory)?.name
     : null;
 
   return (

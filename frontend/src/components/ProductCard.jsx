@@ -3,12 +3,11 @@ import { ArrowRight, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { resolveImageUrl } from "@/lib/media";
-
-const catLabel = (v) => PRODUCT_CATEGORIES.find((c) => c.value === v)?.label || v;
+import { useCategoryLabel } from "@/hooks/useCategories";
 
 export default function ProductCard({ product }) {
+  const catLabel = useCategoryLabel(product.category);
   return (
     <Card
       data-testid={`product-card-${product.id}`}
@@ -24,7 +23,7 @@ export default function ProductCard({ product }) {
       </Link>
       <div className="p-5 flex flex-col flex-1">
         <Badge variant="secondary" className="w-fit mb-2 bg-[#A8D45A]/20 text-[#0E7A3A] hover:bg-[#A8D45A]/30 border-0">
-          {catLabel(product.category)}
+          {catLabel}
         </Badge>
         <Link to={`/produits/${product.id}`}>
           <h3 className="font-heading font-semibold text-lg leading-snug hover:text-[#0E7A3A] transition-colors">

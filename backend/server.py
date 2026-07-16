@@ -130,6 +130,21 @@ class ProductInput(BaseModel):
     featured: bool = False
     order: int = 0
 
+class Category(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    name: str
+    value: str  # slug utilisé sur products.category
+    description: Optional[str] = ""
+    order: int = 0
+    created_at: str = Field(default_factory=now_iso)
+
+class CategoryInput(BaseModel):
+    name: str
+    value: str
+    description: Optional[str] = ""
+    order: int = 0
+
 class Article(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=new_id)
@@ -274,6 +289,11 @@ async def get_product(product_id: str):
         raise HTTPException(status_code=404, detail="Produit introuvable")
     return doc
 
+# ------------------------------------------------------------------ Categories (public)
+@api_router.get("/categories", response_model=List[Category])
+async def list_categories():
+    return await db.categories.find({}, {"_id": 0}).sort([("order", 1), ("name", 1)]).to_list(500)
+
 @api_router.get("/articles", response_model=List[Article])
 async def list_articles(category: Optional[str] = None):
     q: dict = {"published": True}
@@ -408,6 +428,55 @@ async def update_product(product_id: str, payload: ProductInput, user: dict = De
 async def delete_product(product_id: str, user: dict = Depends(get_current_user)):
     await db.products.delete_one({"id": product_id})
     return {"message": "Produit supprimé"}
+
+# ------------------------------------------------------------------ Admin - Categories
+def _normalize_cat_value(value: str) -> str:
+    v = slugify(value)
+    if not v or v == "all":
+        raise HTTPException(status_code=400, detail="Slug de catégorie invalide.")
+    return v
+
+@api_router.post("/admin/categories", response_model=Category)
+async def create_category(payload: CategoryInput, user: dict = Depends(get_current_user)):
+    value = _normalize_cat_value(payload.value)
+    if await db.categories.find_one({"value": value}):
+        raise HTTPException(status_code=409, detail=f"Une catégorie avec le slug « {value} » existe déjà.")
+    data = payload.model_dump()
+    data["value"] = value
+    cat = Category(**data)
+    await db.categories.insert_one(cat.model_dump())
+    return cat
+
+@api_router.put("/admin/categories/{item_id}", response_model=Category)
+async def update_category(item_id: str, payload: CategoryInput, user: dict = Depends(get_current_user)):
+    existing = await db.categories.find_one({"id": item_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Catégorie introuvable")
+    new_value = _normalize_cat_value(payload.value)
+    if new_value != existing["value"]:
+        # slug changed → vérifier unicité + propager sur les produits
+        if await db.categories.find_one({"value": new_value, "id": {"$ne": item_id}}):
+            raise HTTPException(status_code=409, detail=f"Une catégorie avec le slug « {new_value} » existe déjà.")
+        await db.products.update_many({"category": existing["value"]}, {"$set": {"category": new_value}})
+    data = payload.model_dump()
+    data["value"] = new_value
+    res = await db.categories.find_one_and_update(
+        {"id": item_id}, {"$set": data}, return_document=True)
+    return clean(res)
+
+@api_router.delete("/admin/categories/{item_id}")
+async def delete_category(item_id: str, user: dict = Depends(get_current_user)):
+    cat = await db.categories.find_one({"id": item_id}, {"_id": 0})
+    if not cat:
+        raise HTTPException(status_code=404, detail="Catégorie introuvable")
+    count = await db.products.count_documents({"category": cat["value"]})
+    if count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Suppression impossible : {count} produit(s) sont rattaché(s) à cette catégorie. Réaffectez-les avant de supprimer.",
+        )
+    await db.categories.delete_one({"id": item_id})
+    return {"message": "Catégorie supprimée"}
 
 # ------------------------------------------------------------------ Admin - Articles
 @api_router.get("/admin/articles", response_model=List[Article])
@@ -626,6 +695,16 @@ async def seed_content():
                            SEED_PARTNERS, SEED_CERTIFICATIONS, SEED_STATS)
     if await db.products.count_documents({}) == 0:
         await db.products.insert_many([Product(**p).model_dump() for p in SEED_PRODUCTS])
+    if await db.categories.count_documents({}) == 0:
+        seed_cats = [
+            {"name": "Engrais",               "value": "engrais",       "order": 1, "description": "Engrais minéraux et organo-minéraux"},
+            {"name": "Fertilisants",          "value": "fertilisants",  "order": 2, "description": "Fertilisants foliaires et amendements"},
+            {"name": "Herbicides",            "value": "herbicides",    "order": 3, "description": "Désherbants sélectifs et totaux"},
+            {"name": "Insecticides",          "value": "insecticides",  "order": 4, "description": "Traitements contre les ravageurs"},
+            {"name": "Fongicides",            "value": "fongicides",    "order": 5, "description": "Protection contre les maladies fongiques"},
+            {"name": "Équipements agricoles", "value": "equipements",   "order": 6, "description": "Matériel et outils agricoles"},
+        ]
+        await db.categories.insert_many([Category(**c).model_dump() for c in seed_cats])
     if await db.articles.count_documents({}) == 0:
         arts = [Article(**a, slug=slugify(a["title"])).model_dump() for a in SEED_ARTICLES]
         await db.articles.insert_many(arts)

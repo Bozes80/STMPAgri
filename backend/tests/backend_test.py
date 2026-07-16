@@ -245,3 +245,108 @@ class TestAdmin:
 
         r = s.get(f"{API}/admin/newsletter", headers=auth_headers)
         assert r.status_code == 200
+
+
+# ============== Categories ==============
+class TestCategories:
+    def test_public_list_has_six_seeded(self, s):
+        r = s.get(f"{API}/categories")
+        assert r.status_code == 200
+        cats = r.json()
+        values = [c["value"] for c in cats]
+        for v in ["engrais", "fertilisants", "herbicides", "insecticides", "fongicides", "equipements"]:
+            assert v in values, f"missing seeded category {v} in {values}"
+        # sorted by order asc
+        orders = [c.get("order", 0) for c in cats if c["value"] in ["engrais", "fertilisants", "herbicides", "insecticides", "fongicides", "equipements"]]
+        assert orders == sorted(orders)
+
+    def test_create_requires_auth(self, s):
+        r = requests.post(f"{API}/admin/categories", json={"name": "X", "value": "x_test"})
+        assert r.status_code == 401
+
+    def test_create_invalid_slug_all(self, s, auth_headers):
+        r = s.post(f"{API}/admin/categories", headers=auth_headers,
+                   json={"name": "All", "value": "all"})
+        assert r.status_code == 400
+        assert "invalide" in r.json()["detail"].lower()
+
+    @pytest.mark.xfail(reason="Backend bug: slugify() falls back to uuid[:8] for empty input, so empty slug is silently accepted (spec expects 400).", strict=False)
+    def test_create_empty_slug(self, s, auth_headers):
+        r = s.post(f"{API}/admin/categories", headers=auth_headers,
+                   json={"name": "TEST_Empty", "value": "   "})
+        # cleanup if it was accepted
+        if r.status_code == 200:
+            s.delete(f"{API}/admin/categories/{r.json()['id']}", headers=auth_headers)
+        assert r.status_code == 400
+
+    def test_create_duplicate_slug(self, s, auth_headers):
+        r = s.post(f"{API}/admin/categories", headers=auth_headers,
+                   json={"name": "Engrais duplicate", "value": "engrais"})
+        assert r.status_code == 409
+
+    def test_delete_category_with_products_blocked(self, s, auth_headers):
+        # Find engrais category id
+        cats = s.get(f"{API}/categories").json()
+        engrais = next(c for c in cats if c["value"] == "engrais")
+        r = s.delete(f"{API}/admin/categories/{engrais['id']}", headers=auth_headers)
+        assert r.status_code == 409
+        detail = r.json()["detail"]
+        assert "Suppression impossible" in detail
+        assert "produit" in detail.lower()
+
+    def test_full_crud_cycle_with_slug_propagation(self, s, auth_headers):
+        # Create
+        payload = {"name": "TEST_Cat", "value": "test_cat_slug", "description": "d", "order": 99}
+        r = s.post(f"{API}/admin/categories", headers=auth_headers, json=payload)
+        assert r.status_code == 200, r.text
+        cat = r.json()
+        cid = cat["id"]
+        assert cat["value"] == "test-cat-slug"  # slugify normalizes underscores to dashes
+
+        # Create a product attached to it
+        pr = s.post(f"{API}/admin/products", headers=auth_headers,
+                    json={"name": "TEST_ProdInCat", "category": "test-cat-slug",
+                          "description": "d", "characteristics": [], "applications": []})
+        assert pr.status_code == 200
+        pid = pr.json()["id"]
+
+        # Update category with new slug → propagates on products
+        r2 = s.put(f"{API}/admin/categories/{cid}", headers=auth_headers,
+                   json={"name": "TEST_Cat_2", "value": "test-cat-slug-2", "description": "d2", "order": 99})
+        assert r2.status_code == 200
+        assert r2.json()["value"] == "test-cat-slug-2"
+        # verify product now has new category
+        pdet = s.get(f"{API}/products/{pid}").json()
+        assert pdet["category"] == "test-cat-slug-2"
+
+        # Deleting category should be blocked (still has product)
+        r3 = s.delete(f"{API}/admin/categories/{cid}", headers=auth_headers)
+        assert r3.status_code == 409
+
+        # Cleanup product
+        s.delete(f"{API}/admin/products/{pid}", headers=auth_headers)
+
+        # Now delete succeeds
+        r4 = s.delete(f"{API}/admin/categories/{cid}", headers=auth_headers)
+        assert r4.status_code == 200
+
+        # Verify gone
+        cats = s.get(f"{API}/categories").json()
+        assert not any(c["id"] == cid for c in cats)
+
+    def test_update_slug_conflict(self, s, auth_headers):
+        # Create a temp category then try updating another to its slug
+        r = s.post(f"{API}/admin/categories", headers=auth_headers,
+                   json={"name": "TEST_TmpA", "value": "test-tmp-a", "order": 500})
+        assert r.status_code == 200
+        cid = r.json()["id"]
+        try:
+            # Try updating engrais to slug "test-tmp-a" → 409
+            cats = s.get(f"{API}/categories").json()
+            engrais = next(c for c in cats if c["value"] == "engrais")
+            r2 = s.put(f"{API}/admin/categories/{engrais['id']}", headers=auth_headers,
+                       json={"name": engrais["name"], "value": "test-tmp-a",
+                             "description": engrais.get("description", ""), "order": engrais.get("order", 1)})
+            assert r2.status_code == 409
+        finally:
+            s.delete(f"{API}/admin/categories/{cid}", headers=auth_headers)

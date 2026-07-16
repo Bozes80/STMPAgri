@@ -1,12 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import CrudManager from "@/components/admin/CrudManager";
-import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { resolveImageUrl } from "@/lib/media";
-
-const options = PRODUCT_CATEGORIES.filter((c) => c.value !== "all");
-const label = (v) => options.find((o) => o.value === v)?.label || v;
+import { useCategories } from "@/hooks/useCategories";
 
 export default function AdminProducts() {
+  const { categories } = useCategories();
+  const options = categories.map((c) => ({ value: c.value, label: c.name }));
+  const catLabel = (v) => options.find((o) => o.value === v)?.label || v;
+  const defaultCat = options[0]?.value || "engrais";
+
   return (
     <CrudManager
       testid="admin-products"
@@ -16,7 +18,7 @@ export default function AdminProducts() {
       listUrl="/products"
       mutateUrl="/admin/products"
       emptyItem={{
-        name: "", category: "engrais", subcategory: "", description: "",
+        name: "", category: defaultCat, subcategory: "", description: "",
         characteristics: "", applications: "", image: "", featured: false, order: 0,
       }}
       fields={[
@@ -33,7 +35,7 @@ export default function AdminProducts() {
       columns={[
         { header: "Image", render: (p) => <img src={resolveImageUrl(p.image)} alt="" className="h-11 w-11 rounded-md object-cover" /> },
         { header: "Nom", render: (p) => <span className="font-medium">{p.name}</span> },
-        { header: "Catégorie", render: (p) => <Badge variant="secondary">{label(p.category)}</Badge> },
+        { header: "Catégorie", render: (p) => <Badge variant="secondary">{catLabel(p.category)}</Badge> },
         { header: "Vedette", render: (p) => (p.featured ? <Badge className="bg-[#F2D400] text-[#1F2937] hover:bg-[#F2D400]">Oui</Badge> : <span className="text-muted-foreground">—</span>) },
       ]}
     />

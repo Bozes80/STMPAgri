@@ -8,12 +8,14 @@ import Reveal from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
-import { PRODUCT_CATEGORIES, IMAGES } from "@/lib/constants";
+import { IMAGES } from "@/lib/constants";
+import { useCategories } from "@/hooks/useCategories";
 
 export default function Produits() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [category, setCategory] = useState(searchParams.get("cat") || "all");
   const [search, setSearch] = useState("");
+  const { categories } = useCategories({ withAll: true });
 
   useEffect(() => {
     const cat = searchParams.get("cat") || "all";
@@ -46,7 +48,7 @@ export default function Produits() {
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between mb-10">
             <div className="flex items-center gap-2 flex-wrap" data-testid="product-filters">
               <SlidersHorizontal className="h-4 w-4 text-muted-foreground mr-1" />
-              {PRODUCT_CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <Button
                   key={c.value}
                   size="sm"
@@ -59,7 +61,7 @@ export default function Produits() {
                       : "border-border"
                   }
                 >
-                  {c.label}
+                  {c.name}
                 </Button>
               ))}
             </div>

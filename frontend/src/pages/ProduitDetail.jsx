@@ -4,10 +4,8 @@ import { Loader2, ChevronLeft, CheckCircle2, Target, FileText, ChevronRight } fr
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import api from "@/lib/api";
-import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { resolveImageUrl } from "@/lib/media";
-
-const catLabel = (v) => PRODUCT_CATEGORIES.find((c) => c.value === v)?.label || v;
+import { useCategoryLabel } from "@/hooks/useCategories";
 
 export default function ProduitDetail() {
   const { id } = useParams();
@@ -16,6 +14,7 @@ export default function ProduitDetail() {
     queryKey: ["product", id],
     queryFn: async () => (await api.get(`/products/${id}`)).data,
   });
+  const catLabel = useCategoryLabel(product?.category);
 
   if (isLoading)
     return (
@@ -52,7 +51,7 @@ export default function ProduitDetail() {
 
           <div>
             <Badge className="bg-[#A8D45A]/20 text-[#0E7A3A] hover:bg-[#A8D45A]/30 border-0">
-              {catLabel(product.category)}
+              {catLabel}
             </Badge>
             <h1 className="mt-4 font-heading text-3xl md:text-4xl font-bold tracking-tight">
               {product.name}

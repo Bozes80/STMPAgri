@@ -25,6 +25,7 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminCategories from "@/pages/admin/AdminCategories";
 import AdminArticles from "@/pages/admin/AdminArticles";
 import AdminRealisations from "@/pages/admin/AdminRealisations";
 import AdminPartners from "@/pages/admin/AdminPartners";
@@ -68,6 +69,7 @@ function App() {
             >
               <Route index element={<AdminDashboard />} />
               <Route path="produits" element={<AdminProducts />} />
+              <Route path="categories" element={<AdminCategories />} />
               <Route path="articles" element={<AdminArticles />} />
               <Route path="realisations" element={<AdminRealisations />} />
               <Route path="partenaires" element={<AdminPartners />} />

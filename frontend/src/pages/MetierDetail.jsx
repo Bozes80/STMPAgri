@@ -5,18 +5,20 @@ import Reveal from "@/components/Reveal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MotifDivider } from "@/components/SectionHeading";
-import { METIER_DETAILS, SERVICES, PRODUCT_CATEGORIES } from "@/lib/constants";
+import { METIER_DETAILS, SERVICES } from "@/lib/constants";
+import { useCategories } from "@/hooks/useCategories";
 
 export default function MetierDetail() {
   const { key } = useParams();
   const data = METIER_DETAILS[key];
+  const { categories } = useCategories();
   if (!data) return <Navigate to="/" replace />;
 
   const service = SERVICES.find((s) => s.key === key);
   const Icon = service?.icon || Package;
   const others = SERVICES.filter((s) => s.key !== key);
   const relatedCatLabel = data.relatedCategory
-    ? PRODUCT_CATEGORIES.find((c) => c.value === data.relatedCategory)?.label
+    ? categories.find((c) => c.value === data.relatedCategory)?.name
     : null;
 
   return (

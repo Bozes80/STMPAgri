@@ -1,0 +1,37 @@
+{
+  "summary": "Testing of the new Product Categories management feature (backend CRUD + admin UI + public filters). Backend: added TestCategories class (8 tests) to /app/backend/tests/backend_test.py. All targeted category flows pass — public GET returns 6 seeded slugs sorted by order; auth-gated POST/PUT/DELETE work; slug='all' rejected 400; duplicate slug 409; delete blocked with clear French message when products attached (5 engrais products); update propagates slug change to products.category; slug conflict on update returns 409. Frontend: /admin/categories renders 6 rows, add-btn opens dialog, create TEST_Semences appears in table, edit updates the name, delete of 'Engrais' (with products) is blocked with the exact backend toast 'Suppression impossible : 5 produit(s) sont rattaché(s)…' and row remains, delete of TEST_Semences_Edited succeeds. /produits filter chips are dynamic (filter-all + filter-engrais/fertilisants/herbicides/insecticides/fongicides/equipements) and clicking filter-engrais shows exactly the 5 engrais products with human badge 'Engrais'. Regression: all previous 24 backend tests still green.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/admin/categories", "issue": "Empty/whitespace-only slug is NOT rejected with 400 as specified. slugify() falls back to a random uuid[:8] so `value='   '` silently creates a category with a nonsensical slug (e.g. `175a40de`). Spec explicitly asks for 400 'Slug de catégorie invalide.'. Guard should reject before slugify falls back, or validate name is non-empty. Test marked xfail in TestCategories.test_create_empty_slug."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminLayout sidebar", "issue": "data-testid for Catégories link is `admin-nav-cat-gories` (é replaced by '-') instead of the spec's `admin-nav-categories`. toTestId helper in AdminLayout.jsx line 46 uses `n.label.toLowerCase().replace(/\\s|é/g, '-')` — same accent-stripping bug flagged in iter2 for Header.jsx. Recommend `normalize('NFD').replace(/\\p{Diacritic}/gu, '')` then `.replace(/[^a-z0-9]+/g,'-')`.", "selector": "[data-testid=admin-nav-categories]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Backend (minor): Validate empty/whitespace slug in _normalize_cat_value BEFORE slugify() falls back to uuid, or make slugify raise for empty input in this context. Currently POST with value='   ' returns 200 with random uuid slug instead of 400.",
+    "Frontend (cosmetic): Fix AdminLayout.jsx line 46 toTestId regex so accents are properly stripped — expected testid `admin-nav-categories`, currently emits `admin-nav-cat-gories`. Same class of bug as iter2 Header.jsx toTestId."
+  ],
+  "critical_code_review_comments": [
+    "backend/server.py slugify() returns `new_id()[:8]` fallback for empty strings — masks invalid input in category creation. Consider a stricter slugify_strict() variant that raises for empty results, or explicit empty-check in _normalize_cat_value before calling slugify.",
+    "PUT /api/admin/categories cascades products.category on slug rename (good) but there is no similar transactional guarantee — if update fails mid-way (very unlikely with two ops here) products could reference the new slug while the category row was not persisted. Acceptable for this scale, worth noting.",
+    "Category order is not unique — two categories could share the same order integer; sorting then falls back to name. Fine for now.",
+    "AdminLayout.jsx toTestId: same accent handling bug carried over from iter2 (only strips é, not è/à/ï/ô etc)."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "97% (31/32 targeted; 1 xfail on empty-slug spec deviation)", "frontend": "100% of requested flows verified (admin CRUD, blocked delete toast, public filters, category badge)"},
+  "test_credentials": "admin@stmpagri.ci / StmpAgri2025!",
+  "seed_data_creation": "Only ephemeral TEST_-prefixed categories/products created during pytest + one 'TEST_Semences_Edited' in the browser flow; all cleaned up. Verified /api/categories at end returns exactly the 6 seeded slugs.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Categories: sidebar link testid is admin-nav-cat-gories (é→-) NOT admin-nav-categories — click via a[href='/admin/categories'] as a safer selector. Save button inside the CrudManager dialog is button[type='submit'] (no dedicated testid). The public filter chips DO expose stable data-testid=filter-<slug>. Delete uses native window.confirm(); register `page.on('dialog', d: d.accept())` BEFORE clicking. Backend seeded categories collection is now idempotent (seeds only if empty), verified via the full CRUD cycle test."
+}
