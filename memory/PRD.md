@@ -103,6 +103,13 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - **AlertDialog suppression** : si l'image est référencée ailleurs, un panneau ⚠️ jaune liste les usages (produits/articles/réalisations/partenaires/pages) et le bouton Supprimer reste actif (choix 2.b — autoriser avec alerte forte).
   - **MediaPickerDialog** (composant réutilisable) intégré dans `CoverImageField` (pages CMS/couvertures) et `ImageField` du `CrudManager` (produits, articles, réalisations, partenaires) : bouton **« Médiathèque »** à côté du bouton **« Téléverser »**. Le picker permet de filtrer par section, chercher, upload direct + sélection puis injection de l'URL relative `/api/files/stmp-agri/media/<uuid>.<ext>` dans le champ image du formulaire.
   - Testé end-to-end : **100 % backend (19/19 nouveaux tests + 88/88 régression) + 100 % frontend (12/12 flux : sidebar, page, upload multi, filtre onglets, recherche, aperçu, édition, copie URL, suppression avec/sans usages, MediaPicker dans produit, injection URL).**
+- **Réseaux sociaux — juil. 2026** :
+  - Nouvelle collection MongoDB `socials` : `{id, name, url, icon_url, is_active, order, created_at, updated_at}`. Endpoints : `GET /api/socials` (public, actifs uniquement, triés par `order`), `GET/POST /api/admin/socials`, `PATCH/DELETE /api/admin/socials/{id}`, `POST /api/admin/socials/reorder {ids}`. Validation URL : http(s):// / mailto: / tel: uniquement.
+  - **Seed initial** de 4 réseaux : Facebook / LinkedIn / Instagram / WhatsApp avec icônes SVG monochromes blanches encodées en data-url (paths simplifiés officiels) — remplaçables via l'admin.
+  - Nouvelle page admin `/admin/reseaux` (icône Share2 dans sidebar) : liste triable **drag & drop** (`@dnd-kit`, réordonnancement optimiste avec rollback), previews circulaires sombres façon footer, actions inline (Eye toggle actif, Pencil éditer, Trash supprimer), dialog Ajouter/Modifier avec champs Nom*, URL* (validation), section Icône (Input URL + **MediaPickerDialog** section=footer par défaut + preview live + bouton Retirer), Switch Actif, badge « Inactif » sur la row.
+  - **Footer public dynamique** — nouveau hook `useSocials` (React Query, cache 60s). Footer consomme la liste et rend les icônes (`data-testid=footer-socials`), fallback initiales monogramme si `icon_url` absent, désactivés (is_active=false) exclus.
+  - **Bouton flottant WhatsApp dynamique** — cherche le réseau nommé « WhatsApp » actif (case-insensitive) ; ajoute `?text=…` automatiquement si l'URL est `wa.me` ou `whatsapp.com` ; fallback sur `COMPANY.whatsappHref` sinon.
+  - Testé end-to-end : **100 % backend (21/21 nouveaux tests + 110/110 régression) + 100 % frontend (12/12 flux : sidebar, page, seed, dialog Ajouter avec validation, Modifier, toggle actif, drag & drop reorder, MediaPicker icône, suppression, footer public dynamique, bouton WhatsApp dynamique).**
 
 ## Implémenté (mise à jour fév. 2026 - suite)
 
@@ -120,6 +127,7 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
 - **P2 : CMS Pages Phase 3** — blocs custom (accordéons, colonnes, boutons, vidéos, audio, shortcodes), permissions granulaires (rôles Éditeur/Auteur/Modérateur avec Lire/Créer/Modifier/Publier/Supprimer/Restaurer), pages protégées par mot de passe / rôle, CSS/JS custom + templates par page, commentaires internes par page.
 - P2 : Catalogues PDF téléchargeables + certificats PDF.
 - P2 : Widget de chat WhatsApp flottant réel (actuellement bouton avec lien statique).
+  - Le lien du bouton est désormais dynamique (juil. 2026) — synchronisé avec le réseau WhatsApp actif dans /admin/reseaux. Reste à implémenter le widget de chat en bulle si souhaité.
 - P2 : Refactoring backend (`server.py` > 1100 lignes) → découper en `/app/backend/routes/` + `/app/backend/models/`.
 - P2 : Gestion / suppression des fichiers uploadés (endpoint admin de nettoyage, garbage-collect des orphelins). Upload/Download : FAIT.
 - P2 : Remplacer les coordonnées de démonstration par les vraies (tél, WhatsApp, adresse, réseaux sociaux, Google Maps).
