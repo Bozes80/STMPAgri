@@ -1,0 +1,34 @@
+{
+  "summary": "End-to-end validation of Phase 2 CMS (Menus + Pages bulk-delete + tree reorder). BACKEND: created /app/backend/tests/test_menus_bulk.py with 18 tests — all PASS. Coverage: (1) GET /api/menus/main returns seeded menu with exactly 12 items (7 top-level + 5 sub-items whose parent is 'Nos activités', all sub URLs starting /activites/). (2) GET /api/menus/footer OK. (3) GET /api/menus/{unknown} returns empty menu (200) not 404. (4) GET /api/admin/menus and /admin/menus/{location} require auth (401) and list/return correctly. (5) PUT /api/admin/menus/{location} — auth-gated, upserts, auto-generates missing MenuItem IDs, preserves supplied IDs, persists items across reads, allows shrinking list. (6) POST /api/admin/pages/bulk-delete — auth-gated, empty list → {deleted:0}, deleting a parent detaches its children (parent_id set to null). (7) POST /api/admin/pages/reorder — auth-gated, updates parent_id + order + updated_at. Regressions still green (pages public list, admin pages list still contains 'À propos de STMP Agri', 6 seeded categories intact). FRONTEND (Playwright, admin@stmpagri.ci): Public Header renders dynamically from /api/menus/main — 7 top labels (Accueil · Nos métiers · Nos activités · Nos produits · Nos réalisations · Actualités · Contact), dropdown 'Nos activités' shows 5 children (nav-child-*), 'Plus' button always visible. Footer renders 10 top-level items from /api/menus/footer including Partenaires/Certifications/RSE. Admin Sidebar lists 'Menus' between Pages & Produits. /admin/menus shows 2 tabs (Menu principal / Menu pied de page). menu-main-add-item-btn & menu-main-save-btn present; Add item dialog exposes menu-item-label/url/target/parent + menu-item-save-btn; adding 'TEST_UI_Item' → dirty state → main save enabled → POST /admin/menus/main persists (verified after reload). Cleanup performed. /admin/pages exposes admin-pages-view-table & admin-pages-view-tree toggles; admin-pages-select-all + admin-pages-select-<id> checkboxes present; created 2 temp pages via API, selected them → admin-pages-bulk-bar appeared → admin-pages-bulk-delete → admin-pages-bulk-delete-confirm → both pages removed (verified). Tree view renders created temp Parent/Child; reorder API call from browser context returned 200 {updated:1}. 'À propos de STMP Agri', seeded categories and seeded menus preserved.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminMenus item dialog", "issues": ["A11y warning: <DialogContent> is missing a Description / aria-describedby. Non-blocking but should add <DialogDescription> to MenuItemDialog for a11y compliance."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_menus_bulk.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/menus_bulk_results.xml"
+  ],
+  "action_items": [
+    "(Cosmetic) Add <DialogDescription> to MenuItemDialog (a11y warning in console)."
+  ],
+  "critical_code_review_comments": [
+    "MenuInput accepts full MenuItem list; server auto-generates missing id and normalizes order — good. However `it.get('order') is None` check will never trigger because MenuItem default is 0 and Pydantic already assigns 0; consider basing normalization purely on position i.",
+    "GET /admin/menus returns raw docs without response_model=List[Menu] — extra fields could leak; low risk (admin-only).",
+    "bulk_delete_pages does not verify caller role; any authenticated user can bulk-delete pages. Consider requiring role=admin (same for reorder_pages).",
+    "reorder_pages performs N sequential update_one calls — for large trees consider bulk_write; fine at current scale.",
+    "Public GET /menus/{location} returns a fresh Menu() when missing — the returned object contains a random id/updated_at; consider stripping those for consistency (or fine as-is since front only reads location/items).",
+    "Header 'nav-plus' menu is hardcoded from NAV_LINKS_SECONDARY — as designed per spec (fallback for Partenaires/Certifications/RSE). Consider migrating this into the dynamic menu too in a future phase."
+  ],
+  "updated_files": ["/app/backend/tests/test_menus_bulk.py"],
+  "success_rate": {"backend": "100% (18/18 new menus+bulk+reorder tests; legacy suites unaffected)", "frontend": "100% of declared testids and flows verified (dynamic Header/Footer, AdminMenus tabs+dialog+persist, AdminPages bulk-select+bulk-delete-confirm, tree view + reorder API)"},
+  "test_credentials": "admin@stmpagri.ci / StmpAgri2025!",
+  "seed_data_creation": "All temp pages (TEST_UI_Bulk1/2, TEST_UI_TreeParent/Child) and TEST_UI_Item menu entry created during testing were removed at end. 'À propos de STMP Agri', 6 seeded categories, and both seeded menus (main/footer) intact.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 CMS is production-ready. Key endpoints: GET /api/menus/{location} (public, empty-fallback), GET/PUT /api/admin/menus[/{location}] (auth), POST /api/admin/pages/bulk-delete, POST /api/admin/pages/reorder. Frontend testids: menu-{location}-add-item-btn, menu-{location}-save-btn, menu-item-dialog, menu-item-{label,url,target,parent,save-btn}, menu-item-{edit,delete}-<id>, admin-pages-view-{table,tree}, admin-pages-select-{all,<id>}, admin-pages-bulk-{bar,cancel,delete,delete-confirm}, nav-<label>, nav-child-<label>, nav-plus. Drag & drop via @dnd-kit was NOT simulated in Playwright (unreliable) — reorder was verified via direct POST /admin/pages/reorder call; visual DnD requires manual QA. To run backend tests: `REACT_APP_BACKEND_URL=<url> pytest /app/backend/tests/test_menus_bulk.py -v`."
+}

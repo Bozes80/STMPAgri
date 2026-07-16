@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Tag, FileEdit, Newspaper, Building2, ShieldCheck,
+  LayoutDashboard, Package, Tag, FileEdit, ListOrdered, Newspaper, Building2, ShieldCheck,
   Handshake, Mail, FileText, Send, LogOut, ExternalLink, Menu, X,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 const NAV = [
   { to: "/admin", label: "Tableau de bord", icon: LayoutDashboard, end: true },
   { to: "/admin/pages", label: "Pages", icon: FileEdit },
+  { to: "/admin/menus", label: "Menus", icon: ListOrdered },
   { to: "/admin/produits", label: "Produits", icon: Package },
   { to: "/admin/categories", label: "Catégories", icon: Tag },
   { to: "/admin/articles", label: "Actualités", icon: Newspaper },

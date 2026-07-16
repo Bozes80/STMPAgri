@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { Facebook, Linkedin, Instagram, Twitter, MapPin, Phone, Smartphone, Mail, Clock } from "lucide-react";
 import Logo from "@/components/Logo";
 import Newsletter from "@/components/Newsletter";
-import { COMPANY, NAV_LINKS, SERVICES } from "@/lib/constants";
+import { COMPANY, SERVICES } from "@/lib/constants";
+import { useMenu } from "@/hooks/useMenu";
 
 const socials = [
   { icon: Facebook, href: COMPANY.social.facebook, label: "Facebook" },
@@ -12,6 +13,7 @@ const socials = [
 ];
 
 export default function Footer() {
+  const { items: footerItems } = useMenu("footer");
   return (
     <footer className="bg-[#111C15] text-white/80" data-testid="site-footer">
       <div className="container-stmp py-16 grid gap-12 md:grid-cols-2 lg:grid-cols-4">
@@ -40,12 +42,16 @@ export default function Footer() {
 
         <div>
           <h4 className="font-heading font-semibold text-white mb-5">Navigation</h4>
-          <ul className="space-y-3 text-sm">
-            {NAV_LINKS.map((l) => (
-              <li key={l.to}>
-                <Link to={l.to} className="hover:text-[#A8D45A] transition-colors">
-                  {l.label}
-                </Link>
+          <ul className="space-y-3 text-sm" data-testid="footer-nav">
+            {footerItems.filter((l) => !l.parent_id).map((l) => (
+              <li key={l.id}>
+                {/^https?:\/\//i.test(l.url || "") ? (
+                  <a href={l.url} target={l.target || "_self"} rel="noreferrer"
+                    className="hover:text-[#A8D45A] transition-colors">{l.label}</a>
+                ) : (
+                  <Link to={l.url || "/"} target={l.target || "_self"}
+                    className="hover:text-[#A8D45A] transition-colors">{l.label}</Link>
+                )}
               </li>
             ))}
           </ul>

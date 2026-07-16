@@ -37,6 +37,7 @@ import AdminQuotes from "@/pages/admin/AdminQuotes";
 import AdminNewsletter from "@/pages/admin/AdminNewsletter";
 import AdminPages from "@/pages/admin/AdminPages";
 import PageEditor from "@/pages/admin/PageEditor";
+import AdminMenus from "@/pages/admin/AdminMenus";
 
 function App() {
   return (
@@ -77,6 +78,7 @@ function App() {
                 <Route path="pages" element={<AdminPages />} />
                 <Route path="pages/nouveau" element={<PageEditor />} />
                 <Route path="pages/:id" element={<PageEditor />} />
+                <Route path="menus" element={<AdminMenus />} />
                 <Route path="produits" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="articles" element={<AdminArticles />} />

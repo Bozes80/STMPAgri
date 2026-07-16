@@ -196,6 +196,39 @@ class PageInput(BaseModel):
     seo: PageSeo = Field(default_factory=PageSeo)
     published_at: Optional[str] = None
 
+# ------------------------------------------------------------------ Menus
+class MenuItem(BaseModel):
+    id: str = Field(default_factory=new_id)
+    label: str
+    url: str = ""
+    target: str = "_self"      # _self | _blank
+    icon: Optional[str] = ""
+    parent_id: Optional[str] = None   # référence un autre MenuItem.id du même menu
+    order: int = 0
+
+class Menu(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    location: str              # main | footer | <custom slug>
+    name: str = ""
+    items: List[MenuItem] = []
+    updated_at: str = Field(default_factory=now_iso)
+
+class MenuInput(BaseModel):
+    name: str = ""
+    items: List[MenuItem] = []
+
+class BulkIdsInput(BaseModel):
+    ids: List[str]
+
+class ReorderItem(BaseModel):
+    id: str
+    parent_id: Optional[str] = None
+    order: int = 0
+
+class ReorderInput(BaseModel):
+    items: List[ReorderItem]
+
 class Article(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=new_id)
@@ -629,6 +662,67 @@ async def set_page_status(page_id: str, status: str, user: dict = Depends(get_cu
         raise HTTPException(status_code=404, detail="Page introuvable")
     return _clean_page(res)
 
+@api_router.post("/admin/pages/bulk-delete")
+async def bulk_delete_pages(payload: BulkIdsInput, user: dict = Depends(get_current_user)):
+    if not payload.ids:
+        return {"deleted": 0}
+    r = await db.pages.delete_many({"id": {"$in": payload.ids}})
+    # Détacher les enfants orphelins (parent_id → null)
+    await db.pages.update_many({"parent_id": {"$in": payload.ids}}, {"$set": {"parent_id": None}})
+    return {"deleted": r.deleted_count}
+
+@api_router.post("/admin/pages/reorder")
+async def reorder_pages(payload: ReorderInput, user: dict = Depends(get_current_user)):
+    now = now_iso()
+    for it in payload.items:
+        await db.pages.update_one(
+            {"id": it.id},
+            {"$set": {"parent_id": it.parent_id, "order": it.order, "updated_at": now}},
+        )
+    return {"updated": len(payload.items)}
+
+# ------------------------------------------------------------------ Menus (public)
+@api_router.get("/menus/{location}", response_model=Menu)
+async def get_menu_public(location: str):
+    doc = await db.menus.find_one({"location": location}, {"_id": 0})
+    if not doc:
+        # Retourne un menu vide plutôt qu'une 404 côté public (fallback front)
+        return Menu(location=location, name=location.capitalize(), items=[]).model_dump()
+    return doc
+
+# ------------------------------------------------------------------ Menus (admin)
+@api_router.get("/admin/menus")
+async def admin_list_menus(user: dict = Depends(get_current_user)):
+    return await db.menus.find({}, {"_id": 0}).sort("location", 1).to_list(50)
+
+@api_router.get("/admin/menus/{location}", response_model=Menu)
+async def admin_get_menu(location: str, user: dict = Depends(get_current_user)):
+    doc = await db.menus.find_one({"location": location}, {"_id": 0})
+    if not doc:
+        return Menu(location=location, name=location.capitalize(), items=[]).model_dump()
+    return doc
+
+@api_router.put("/admin/menus/{location}", response_model=Menu)
+async def admin_upsert_menu(location: str, payload: MenuInput, user: dict = Depends(get_current_user)):
+    data = payload.model_dump()
+    # Recalcule les ids manquants et normalise l'ordre
+    items = data.get("items") or []
+    for i, it in enumerate(items):
+        if not it.get("id"):
+            it["id"] = new_id()
+        if it.get("order") is None:
+            it["order"] = i
+    existing = await db.menus.find_one({"location": location}, {"_id": 0})
+    doc = {
+        "id": (existing or {}).get("id", new_id()),
+        "location": location,
+        "name": data.get("name") or location.capitalize(),
+        "items": items,
+        "updated_at": now_iso(),
+    }
+    await db.menus.update_one({"location": location}, {"$set": doc}, upsert=True)
+    return doc
+
 # ------------------------------------------------------------------ Admin - Articles
 @api_router.get("/admin/articles", response_model=List[Article])
 async def admin_list_articles(user: dict = Depends(get_current_user)):
@@ -856,6 +950,49 @@ async def seed_content():
             {"name": "Équipements agricoles", "value": "equipements",   "order": 6, "description": "Matériel et outils agricoles"},
         ]
         await db.categories.insert_many([Category(**c).model_dump() for c in seed_cats])
+    if await db.menus.count_documents({}) == 0:
+        activites_parent_id = new_id()
+        seed_menus = [
+            {
+                "id": new_id(),
+                "location": "main",
+                "name": "Menu principal",
+                "items": [
+                    {"id": new_id(), "label": "Accueil",          "url": "/",              "target": "_self", "icon": "", "parent_id": None, "order": 0},
+                    {"id": new_id(), "label": "Nos métiers",      "url": "/#metiers",      "target": "_self", "icon": "", "parent_id": None, "order": 1},
+                    {"id": activites_parent_id, "label": "Nos activités", "url": "/activites", "target": "_self", "icon": "", "parent_id": None, "order": 2},
+                    {"id": new_id(), "label": "Achat et vente d'engrais",             "url": "/activites/achat-vente-engrais",      "target": "_self", "icon": "", "parent_id": activites_parent_id, "order": 0},
+                    {"id": new_id(), "label": "Vente de produits phytosanitaires",    "url": "/activites/produits-phytosanitaires", "target": "_self", "icon": "", "parent_id": activites_parent_id, "order": 1},
+                    {"id": new_id(), "label": "Distribution de produits agroalimentaires", "url": "/activites/agroalimentaire",   "target": "_self", "icon": "", "parent_id": activites_parent_id, "order": 2},
+                    {"id": new_id(), "label": "Transport de marchandises",            "url": "/activites/transport-marchandises",   "target": "_self", "icon": "", "parent_id": activites_parent_id, "order": 3},
+                    {"id": new_id(), "label": "Commerce général",                      "url": "/activites/commerce-general",         "target": "_self", "icon": "", "parent_id": activites_parent_id, "order": 4},
+                    {"id": new_id(), "label": "Nos produits",     "url": "/produits",      "target": "_self", "icon": "", "parent_id": None, "order": 3},
+                    {"id": new_id(), "label": "Nos réalisations", "url": "/realisations",  "target": "_self", "icon": "", "parent_id": None, "order": 4},
+                    {"id": new_id(), "label": "Actualités",       "url": "/actualites",    "target": "_self", "icon": "", "parent_id": None, "order": 5},
+                    {"id": new_id(), "label": "Contact",          "url": "/contact",       "target": "_self", "icon": "", "parent_id": None, "order": 6},
+                ],
+                "updated_at": now_iso(),
+            },
+            {
+                "id": new_id(),
+                "location": "footer",
+                "name": "Menu pied de page",
+                "items": [
+                    {"id": new_id(), "label": "Accueil",          "url": "/",              "target": "_self", "icon": "", "parent_id": None, "order": 0},
+                    {"id": new_id(), "label": "Nos métiers",      "url": "/#metiers",      "target": "_self", "icon": "", "parent_id": None, "order": 1},
+                    {"id": new_id(), "label": "Nos produits",     "url": "/produits",      "target": "_self", "icon": "", "parent_id": None, "order": 2},
+                    {"id": new_id(), "label": "Nos réalisations", "url": "/realisations",  "target": "_self", "icon": "", "parent_id": None, "order": 3},
+                    {"id": new_id(), "label": "Actualités",       "url": "/actualites",    "target": "_self", "icon": "", "parent_id": None, "order": 4},
+                    {"id": new_id(), "label": "Contact",          "url": "/contact",       "target": "_self", "icon": "", "parent_id": None, "order": 5},
+                    {"id": new_id(), "label": "Nos activités",    "url": "/activites",     "target": "_self", "icon": "", "parent_id": None, "order": 6},
+                    {"id": new_id(), "label": "Partenaires",      "url": "/partenaires",   "target": "_self", "icon": "", "parent_id": None, "order": 7},
+                    {"id": new_id(), "label": "Certifications",   "url": "/certifications","target": "_self", "icon": "", "parent_id": None, "order": 8},
+                    {"id": new_id(), "label": "RSE",              "url": "/rse",           "target": "_self", "icon": "", "parent_id": None, "order": 9},
+                ],
+                "updated_at": now_iso(),
+            },
+        ]
+        await db.menus.insert_many(seed_menus)
     if await db.articles.count_documents({}) == 0:
         arts = [Article(**a, slug=slugify(a["title"])).model_dump() for a in SEED_ARTICLES]
         await db.articles.insert_many(arts)
