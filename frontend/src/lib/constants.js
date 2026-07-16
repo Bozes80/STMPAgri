@@ -175,12 +175,96 @@ export const SERVICES = [
 ];
 
 export const WHY_US = [
-  { icon: Award, title: "Expertise multisectorielle", text: "Une maîtrise complète de la chaîne agricole, logistique et commerciale." },
-  { icon: Globe2, title: "Réseau international", text: "Un réseau de partenaires fiables à travers l'Afrique et le monde." },
-  { icon: PackageCheck, title: "Qualité des produits", text: "Des intrants certifiés et conformes aux normes en vigueur." },
-  { icon: Clock, title: "Respect des délais", text: "Une logistique maîtrisée pour livrer au bon moment, partout." },
-  { icon: HeartHandshake, title: "Accompagnement personnalisé", text: "Des conseils adaptés aux besoins réels de chaque client." },
-  { icon: Leaf, title: "Agriculture durable", text: "Un engagement concret pour préserver nos sols et nos ressources." },
+  {
+    icon: Award,
+    key: "expertise",
+    title: "Expertise multisectorielle",
+    text: "Une maîtrise complète de la chaîne agricole, logistique et commerciale.",
+    intro:
+      "L'ADN de STMP Agri repose sur une expertise transverse qui couvre toute la chaîne de valeur — de la production à la mise en marché, en passant par la logistique et l'import-export.",
+    points: [
+      "Compétences internes en agronomie, logistique, achat et transit international",
+      "Équipe pluridisciplinaire aux profils complémentaires (ingénieurs, commerciaux, logisticiens)",
+      "Capacité à mener simultanément des projets d'intrants, de transport et de négoce",
+      "Veille technique permanente sur les normes, les intrants et les meilleures pratiques",
+      "Retour d'expérience capitalisé sur plus de 380 clients accompagnés",
+    ],
+  },
+  {
+    icon: Globe2,
+    key: "reseau",
+    title: "Réseau international",
+    text: "Un réseau de partenaires fiables à travers l'Afrique et le monde.",
+    intro:
+      "Notre présence dans 12 pays et notre carnet d'adresses international nous permettent de sourcer les meilleurs produits et d'orchestrer des opérations à l'échelle continentale.",
+    points: [
+      "Partenaires industriels et négociants sur 4 continents",
+      "Présence commerciale directe dans 12 pays d'Afrique de l'Ouest et Centrale",
+      "45+ partenaires stratégiques certifiés",
+      "Accords cadre avec des transporteurs internationaux (route, mer, air)",
+      "Capacité à gérer le transit portuaire, douanier et fiscal de bout en bout",
+    ],
+  },
+  {
+    icon: PackageCheck,
+    key: "qualite",
+    title: "Qualité des produits",
+    text: "Des intrants certifiés et conformes aux normes en vigueur.",
+    intro:
+      "Chaque produit qui porte notre nom passe par une sélection rigoureuse. Nos intrants sont conformes aux normes internationales et homologués par les autorités phytosanitaires régionales.",
+    points: [
+      "Sourcing exclusif auprès de fabricants agréés et certifiés",
+      "Contrôles qualité systématiques avant expédition et à la livraison",
+      "Traçabilité complète des lots (numéro de lot, date, origine, transporteur)",
+      "Conformité stricte aux normes CSP (Comité Sanitaire Phytosanitaire)",
+      "Certifications ISO 9001, HACCP et engagements RSE",
+    ],
+  },
+  {
+    icon: Clock,
+    key: "delais",
+    title: "Respect des délais",
+    text: "Une logistique maîtrisée pour livrer au bon moment, partout.",
+    intro:
+      "L'agriculture ne pardonne pas les retards. C'est pourquoi STMP Agri s'engage sur des délais fermes, avec une logistique maîtrisée en interne et un suivi transparent.",
+    points: [
+      "Engagement contractuel sur les délais de livraison",
+      "Suivi en temps réel des expéditions (portail client + notifications SMS/e-mail)",
+      "Flotte propre et réseau de transporteurs certifiés",
+      "Stocks tampons dans nos entrepôts d'Abidjan pour absorber les pics",
+      "Taux de livraison à l'heure supérieur à 96 % sur les 24 derniers mois",
+    ],
+  },
+  {
+    icon: HeartHandshake,
+    key: "accompagnement",
+    title: "Accompagnement personnalisé",
+    text: "Des conseils adaptés aux besoins réels de chaque client.",
+    intro:
+      "Vous n'êtes jamais seul avec STMP Agri. Un chargé de compte dédié analyse vos besoins et vous propose des solutions sur mesure, avec un vrai accompagnement de terrain.",
+    points: [
+      "Un interlocuteur unique et dédié pour chaque client",
+      "Diagnostic agronomique et plan de fertilisation personnalisé",
+      "Formations aux bonnes pratiques d'application (phytosanitaires, engrais)",
+      "Assistance technique sur site en Côte d'Ivoire et pays limitrophes",
+      "Programme de fidélité et conditions commerciales évolutives",
+    ],
+  },
+  {
+    icon: Leaf,
+    key: "durable",
+    title: "Agriculture durable",
+    text: "Un engagement concret pour préserver nos sols et nos ressources.",
+    intro:
+      "STMP Agri intègre la durabilité au cœur de son offre : nous croyons qu'une agriculture productive doit aussi être respectueuse des sols, de l'eau et des générations futures.",
+    points: [
+      "Gamme d'engrais organo-minéraux et de biostimulants",
+      "Promotion des pratiques d'agriculture raisonnée et de conservation des sols",
+      "Formations sur la gestion durable de la fertilité",
+      "Emballages progressivement recyclables et retour des contenants vides",
+      "Partenariats avec des ONG et instituts de recherche agronomique",
+    ],
+  },
 ];
 
 export const PRODUCT_CATEGORIES = [

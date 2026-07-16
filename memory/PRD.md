@@ -67,6 +67,11 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - Hook `useCategories`/`useCategoryLabel` (React Query, cache 5 min) — le catalogue public (filtres, badges), les cartes produits, la fiche produit, et le formulaire admin lisent désormais les catégories dynamiquement depuis l'API.
   - Seed initial idempotent : 6 catégories créées au premier démarrage (Engrais, Fertilisants, Herbicides, Insecticides, Fongicides, Équipements agricoles).
   - Testé end-to-end (31/32 pytest, tous les flux admin + public validés).
+- **Section « Pourquoi STMP Agri ? » rendue fonctionnelle** :
+  - Les 6 sous-rubriques (Expertise multisectorielle, Réseau international, Qualité des produits, Respect des délais, Accompagnement personnalisé, Agriculture durable) sont désormais **cliquables**.
+  - Chaque carte ouvre un **modal élégant** (Shadcn Dialog) avec : icône, titre, intro contextuelle, 5 preuves concrètes (bullets), CTAs « Demander un devis » et « Nous contacter ».
+  - Contenu de démonstration à remplacer par les textes définitifs de STMP Agri.
+  - Testid `why-us-card-<key>` sur chaque carte, `why-us-modal-quote-btn` / `why-us-modal-contact-btn` dans le modal.
 
 ## Tests
 - Backend : 24 tests pytest — 100% OK. Frontend : flux critiques — 100% OK (itération 1).

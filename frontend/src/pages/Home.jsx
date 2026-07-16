@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, FileText, Globe2, Users, Award, CalendarClock, CheckCircle2 } from "lucide-react";
+import { ArrowRight, FileText, Globe2, Users, Award, CalendarClock, CheckCircle2, MoveUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import Reveal from "@/components/Reveal";
 import { SectionHeading, MotifDivider } from "@/components/SectionHeading";
 import ProductCard from "@/components/ProductCard";
@@ -210,6 +212,7 @@ function Activities() {
 }
 
 function WhyUs() {
+  const [active, setActive] = useState(null);
   return (
     <section className="py-24 bg-[#0E7A3A] text-white relative overflow-hidden">
       <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#F2D400]/10 blur-3xl" />
@@ -223,16 +226,88 @@ function WhyUs() {
         </Reveal>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {WHY_US.map((w, i) => (
-            <Reveal key={w.title} delay={i * 0.05}>
-              <div className="h-full rounded-xl border border-white/15 bg-white/5 p-7 backdrop-blur-sm transition-colors hover:bg-white/10">
-                <w.icon className="h-8 w-8 text-[#F2D400]" />
+            <Reveal key={w.key} delay={i * 0.05}>
+              <button
+                type="button"
+                onClick={() => setActive(w)}
+                data-testid={`why-us-card-${w.key}`}
+                className="group h-full w-full text-left rounded-xl border border-white/15 bg-white/5 p-7 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-[#F2D400]/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#F2D400]/60"
+                aria-label={`En savoir plus : ${w.title}`}
+              >
+                <div className="flex items-start justify-between">
+                  <w.icon className="h-8 w-8 text-[#F2D400]" />
+                  <MoveUpRight className="h-4 w-4 text-white/40 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+                </div>
                 <h3 className="mt-4 font-heading font-semibold text-lg">{w.title}</h3>
                 <p className="mt-2 text-sm text-white/75 leading-relaxed">{w.text}</p>
-              </div>
+                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[#F2D400]/90 group-hover:text-[#F2D400]">
+                  Découvrir <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </button>
             </Reveal>
           ))}
         </div>
       </div>
+
+      <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
+        <DialogContent
+          data-testid="why-us-modal"
+          className="max-w-2xl border-border bg-card"
+        >
+          {active && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 grid place-items-center rounded-xl bg-[#0E7A3A]/10 text-[#0E7A3A]">
+                    <active.icon className="h-5 w-5" />
+                  </div>
+                  <DialogTitle className="font-heading text-xl md:text-2xl">
+                    {active.title}
+                  </DialogTitle>
+                </div>
+                <DialogDescription className="pt-3 text-sm md:text-base leading-relaxed text-muted-foreground">
+                  {active.intro}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-2">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[#7FAE3C] mb-3">
+                  Concrètement
+                </h4>
+                <ul className="space-y-2.5">
+                  {active.points.map((p) => (
+                    <li key={p} className="flex items-start gap-2.5 text-sm">
+                      <CheckCircle2 className="h-4.5 w-4.5 text-[#0E7A3A] shrink-0 mt-0.5" />
+                      <span className="text-foreground/85">{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button
+                  asChild
+                  className="bg-[#F2D400] text-[#1F2937] font-bold hover:bg-[#d9be00]"
+                  data-testid="why-us-modal-quote-btn"
+                >
+                  <Link to="/devis" onClick={() => setActive(null)}>
+                    <FileText className="h-4 w-4 mr-2" /> Demander un devis
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  data-testid="why-us-modal-contact-btn"
+                >
+                  <Link to="/contact" onClick={() => setActive(null)}>
+                    Nous contacter
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
