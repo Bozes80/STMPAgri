@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/SectionHeading";
 import api from "@/lib/api";
 import { IMAGES } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
 
 function LogoTrack({ items }) {
   const doubled = [...items, ...items];
@@ -17,8 +18,17 @@ function LogoTrack({ items }) {
             key={i}
             className="flex items-center gap-3 rounded-xl border border-border bg-card px-6 py-4 min-w-[240px]"
           >
-            <div className="h-11 w-11 grid place-items-center rounded-lg bg-[#0E7A3A]/10 text-[#0E7A3A] shrink-0">
-              <Building2 className="h-5 w-5" />
+            <div className="h-11 w-11 grid place-items-center rounded-lg bg-[#0E7A3A]/10 text-[#0E7A3A] shrink-0 overflow-hidden">
+              {p.logo ? (
+                <img
+                  src={resolveImageUrl(p.logo)}
+                  alt={p.name}
+                  className="h-full w-full object-contain"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <Building2 className="h-5 w-5" />
+              )}
             </div>
             <div className="leading-tight">
               <div className="font-heading font-semibold text-sm">{p.name}</div>
