@@ -52,7 +52,7 @@ function FeatureRow({ id, value, onChange, onRemove }) {
   };
   return (
     <div ref={setNodeRef} style={style}
-      data-testid={`activity-feature-row-${id}`}
+      data-testid={`admin-activity-feature-row-${id}`}
       className="flex items-center gap-2 rounded-md border border-border bg-card p-2">
       <button {...attributes} {...listeners}
         className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1" title="Déplacer">
@@ -61,10 +61,10 @@ function FeatureRow({ id, value, onChange, onRemove }) {
       <Input value={value} onChange={(e) => onChange(e.target.value)}
         placeholder="Une caractéristique / point-clé"
         className="flex-1"
-        data-testid={`activity-feature-input-${id}`} />
+        data-testid={`admin-activity-feature-input-${id}`} />
       <Button size="icon" variant="ghost" onClick={onRemove}
         className="text-destructive hover:text-destructive"
-        data-testid={`activity-feature-remove-${id}`}>
+        data-testid={`admin-activity-feature-remove-${id}`}>
         <X className="h-4 w-4" />
       </Button>
     </div>
