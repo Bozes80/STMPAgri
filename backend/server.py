@@ -349,6 +349,40 @@ class SocialInput(BaseModel):
     is_active: bool = True
     order: int = 0
 
+class Activity(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=new_id)
+    key: str  # slug URL — figé après création
+    title: str
+    tagline: str = ""
+    icon_url: str = ""  # image icône (via médiathèque)
+    image: str = ""     # image principale (hero)
+    gallery: List[str] = Field(default_factory=list)
+    teaser: str = ""
+    intro: str = ""
+    features: List[str] = Field(default_factory=list)
+    related_category: Optional[str] = None
+    parent_id: Optional[str] = None
+    order: int = 0
+    is_active: bool = True
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
+
+class ActivityInput(BaseModel):
+    key: Optional[str] = None  # généré depuis title si vide
+    title: str
+    tagline: str = ""
+    icon_url: str = ""
+    image: str = ""
+    gallery: List[str] = Field(default_factory=list)
+    teaser: str = ""
+    intro: str = ""
+    features: List[str] = Field(default_factory=list)
+    related_category: Optional[str] = None
+    parent_id: Optional[str] = None
+    order: int = 0
+    is_active: bool = True
+
 # ------------------------------------------------------------------ Auth routes
 @api_router.post("/auth/login")
 async def login(payload: LoginInput, response: Response):
@@ -575,6 +609,180 @@ async def reorder_socials(body: dict, user: dict = Depends(get_current_user)):
     for idx, item_id in enumerate(ids):
         await db.socials.update_one({"id": item_id}, {"$set": {"order": idx, "updated_at": now_iso()}})
     return {"updated": len(ids)}
+
+# ------------------------------------------------------------------ Activités (public + admin)
+async def _generate_activity_key(base: str) -> str:
+    """Génère un slug unique pour une activité (suffixe -N si collision)."""
+    base = slugify(base)
+    key = base
+    n = 2
+    while await db.activities.find_one({"key": key}):
+        key = f"{base}-{n}"
+        n += 1
+    return key
+
+@api_router.get("/activities")
+async def list_activities_public():
+    """Retourne toutes les activités actives, triées par order.
+    Chaque activité principale (parent_id=None) contient une liste `children` avec ses sous-rubriques actives."""
+    all_active = await db.activities.find({"is_active": True}, {"_id": 0}).sort([("order", 1), ("created_at", 1)]).to_list(500)
+    children_map: dict = {}
+    tops = []
+    for a in all_active:
+        if a.get("parent_id"):
+            children_map.setdefault(a["parent_id"], []).append(a)
+        else:
+            tops.append(a)
+    for t in tops:
+        t["children"] = children_map.get(t["id"], [])
+    return tops
+
+@api_router.get("/activities/{key}")
+async def get_activity_public(key: str):
+    """Retourne une activité par sa clé (slug) + ses sous-rubriques actives."""
+    a = await db.activities.find_one({"key": key, "is_active": True}, {"_id": 0})
+    if not a:
+        raise HTTPException(status_code=404, detail="Activité introuvable.")
+    children = await db.activities.find(
+        {"parent_id": a["id"], "is_active": True}, {"_id": 0}
+    ).sort([("order", 1), ("created_at", 1)]).to_list(200)
+    a["children"] = children
+    # Si c'est une sous-rubrique, ajouter le parent (pour breadcrumb côté frontend)
+    if a.get("parent_id"):
+        parent = await db.activities.find_one({"id": a["parent_id"], "is_active": True}, {"_id": 0})
+        a["parent"] = parent
+    return a
+
+@api_router.get("/admin/activities")
+async def list_activities_admin(user: dict = Depends(get_current_user)):
+    """Retourne toutes les activités (actives + inactives), à plat, triées par (parent_id, order)."""
+    items = await db.activities.find({}, {"_id": 0}).sort([("parent_id", 1), ("order", 1), ("created_at", 1)]).to_list(500)
+    return items
+
+@api_router.get("/admin/activities/{item_id}")
+async def get_activity_admin(item_id: str, user: dict = Depends(get_current_user)):
+    a = await db.activities.find_one({"id": item_id}, {"_id": 0})
+    if not a:
+        raise HTTPException(status_code=404, detail="Activité introuvable.")
+    return a
+
+@api_router.post("/admin/activities")
+async def create_activity(payload: ActivityInput, user: dict = Depends(get_current_user)):
+    if not (payload.title or "").strip():
+        raise HTTPException(status_code=400, detail="Le titre est requis.")
+    # Slug figé à la création (choix utilisateur 2.b)
+    key = (payload.key or "").strip() or payload.title
+    key = await _generate_activity_key(key)
+    # Validation parent
+    if payload.parent_id:
+        parent = await db.activities.find_one({"id": payload.parent_id}, {"_id": 0})
+        if not parent:
+            raise HTTPException(status_code=400, detail="Parent introuvable.")
+        if parent.get("parent_id"):
+            raise HTTPException(status_code=400, detail="Impossible d'imbriquer une sous-rubrique sous une autre sous-rubrique.")
+    # Ordre auto (dernier du même niveau)
+    parent_filter = {"parent_id": payload.parent_id} if payload.parent_id else {"parent_id": None}
+    max_doc = await db.activities.find_one(parent_filter, sort=[("order", -1)])
+    next_order = payload.order if payload.order else ((max_doc.get("order", 0) + 1) if max_doc else 0)
+    doc = Activity(
+        key=key,
+        title=payload.title.strip(),
+        tagline=payload.tagline,
+        icon_url=payload.icon_url,
+        image=payload.image,
+        gallery=payload.gallery,
+        teaser=payload.teaser,
+        intro=payload.intro,
+        features=[f for f in payload.features if (f or "").strip()],
+        related_category=payload.related_category,
+        parent_id=payload.parent_id,
+        order=next_order,
+        is_active=payload.is_active,
+    ).model_dump()
+    await db.activities.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.patch("/admin/activities/{item_id}")
+async def update_activity(item_id: str, body: dict, user: dict = Depends(get_current_user)):
+    existing = await db.activities.find_one({"id": item_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Activité introuvable.")
+    updates: dict = {}
+    # Slug: figé (choix 2.b) — on ignore silencieusement toute tentative de le modifier.
+    for field in ("title", "tagline", "icon_url", "image", "teaser", "intro", "related_category"):
+        if field in body:
+            val = body[field]
+            if field == "title":
+                val = (val or "").strip()
+                if not val:
+                    raise HTTPException(status_code=400, detail="Le titre ne peut pas être vide.")
+            updates[field] = val
+    if "gallery" in body:
+        gal = body.get("gallery") or []
+        if not isinstance(gal, list):
+            raise HTTPException(status_code=400, detail="Le champ gallery doit être une liste d'URLs.")
+        updates["gallery"] = [str(x) for x in gal]
+    if "features" in body:
+        feats = body.get("features") or []
+        if not isinstance(feats, list):
+            raise HTTPException(status_code=400, detail="Le champ features doit être une liste.")
+        updates["features"] = [str(f).strip() for f in feats if str(f).strip()]
+    if "is_active" in body:
+        updates["is_active"] = bool(body["is_active"])
+    if "order" in body:
+        updates["order"] = int(body["order"] or 0)
+    if "parent_id" in body:
+        pid = body["parent_id"] or None
+        if pid:
+            if pid == item_id:
+                raise HTTPException(status_code=400, detail="Une activité ne peut pas être son propre parent.")
+            parent = await db.activities.find_one({"id": pid}, {"_id": 0})
+            if not parent:
+                raise HTTPException(status_code=400, detail="Parent introuvable.")
+            if parent.get("parent_id"):
+                raise HTTPException(status_code=400, detail="Impossible d'imbriquer sous une sous-rubrique (max 2 niveaux).")
+            # Empêche de rendre cette activité une sous-rubrique si elle a déjà des enfants
+            has_children = await db.activities.count_documents({"parent_id": item_id})
+            if has_children:
+                raise HTTPException(status_code=400, detail="Cette activité a des sous-rubriques. Déplacez-les avant de la rattacher à un parent.")
+        updates["parent_id"] = pid
+    if not updates:
+        # Cas où seul un champ ignoré (ex: key) a été fourni : retour silencieux.
+        if body:
+            return existing
+        raise HTTPException(status_code=400, detail="Aucun champ modifiable fourni.")
+    updates["updated_at"] = now_iso()
+    await db.activities.update_one({"id": item_id}, {"$set": updates})
+    existing.update(updates)
+    return existing
+
+@api_router.delete("/admin/activities/{item_id}")
+async def delete_activity(item_id: str, user: dict = Depends(get_current_user)):
+    existing = await db.activities.find_one({"id": item_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Activité introuvable.")
+    # Détache les enfants (ils remontent en niveau principal)
+    await db.activities.update_many({"parent_id": item_id}, {"$set": {"parent_id": None, "updated_at": now_iso()}})
+    await db.activities.delete_one({"id": item_id})
+    return {"message": "Activité supprimée. Les éventuelles sous-rubriques ont été détachées."}
+
+@api_router.post("/admin/activities/reorder")
+async def reorder_activities(body: dict, user: dict = Depends(get_current_user)):
+    """Body: {items: [{id, parent_id, order}, …]} — reparent + réordonne en un appel."""
+    items = body.get("items") or []
+    if not isinstance(items, list):
+        raise HTTPException(status_code=400, detail="Corps invalide : 'items' doit être une liste.")
+    for it in items:
+        if not isinstance(it, dict) or not it.get("id"):
+            continue
+        set_doc = {"updated_at": now_iso()}
+        if "parent_id" in it:
+            set_doc["parent_id"] = it["parent_id"] or None
+        if "order" in it:
+            set_doc["order"] = int(it["order"] or 0)
+        await db.activities.update_one({"id": it["id"]}, {"$set": set_doc})
+    return {"updated": len(items)}
 
 # ------------------------------------------------------------------ Admin - dashboard stats
 @api_router.get("/admin/overview")
@@ -1278,8 +1486,7 @@ async def seed_content():
         await db.partners.insert_many([Partner(**p).model_dump() for p in SEED_PARTNERS])
     if await db.certifications.count_documents({}) == 0:
         await db.certifications.insert_many([Certification(**c).model_dump() for c in SEED_CERTIFICATIONS])
-    if await db.socials.count_documents({}) == 0:
-        # Icônes SVG monochromes blanches (paths simplifiés des logos officiels), encodées en data-url.
+    if await db.socials.count_documents({}) == 0:        # Icônes SVG monochromes blanches (paths simplifiés des logos officiels), encodées en data-url.
         # L'utilisateur pourra les remplacer via la médiathèque plus tard.
         SVG_FB = (
             "data:image/svg+xml;utf8,"
@@ -1314,6 +1521,92 @@ async def seed_content():
         ]
         await db.socials.insert_many([Social(**s).model_dump() for s in seed_socials])
         _ = SVG_TW  # placeholder pour ajout Twitter/X plus tard depuis l'admin
+    if await db.activities.count_documents({}) == 0:
+        seed_activities = [
+            {
+                "key": "achat-vente-engrais",
+                "title": "Achat et vente d'engrais",
+                "tagline": "NPK, Urée, KCL, Kieserite : la nutrition qui booste vos rendements.",
+                "image": "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxmZXJ0aWxpemVyJTIwcGxhbnQlMjBzYWNrcyUyMGFncmljdWx0dXJlfGVufDB8fHx8MTc4Mzk1NTg5OHww&ixlib=rb-4.1.0&q=85",
+                "teaser": "STMP Agri sélectionne et distribue des engrais de qualité — NPK, Urée, KCL, Kieserite — pour optimiser la nutrition de vos cultures et maximiser vos rendements.",
+                "intro": "STMP Agri sélectionne, importe et distribue une gamme complète d'engrais minéraux (NPK, Urée, KCL, Kieserite) et de fertilisants organo-minéraux pour l'ensemble des cultures vivrières et de rente.\nGrâce à un sourcing rigoureux et à un réseau logistique maîtrisé, nous garantissons des produits conformes aux normes, disponibles au bon moment et au meilleur rapport qualité-prix.",
+                "features": [
+                    "Engrais de fond et de couverture (NPK, Urée 46% N, KCL 60%, Kieserite)",
+                    "Fertilisants organo-minéraux et amendements calcaires",
+                    "Conditionnements adaptés : sacs de 25 kg et 50 kg",
+                    "Conseil agronomique et plans de fertilisation sur mesure",
+                    "Livraison sur tout le territoire ivoirien et la sous-région",
+                ],
+                "related_category": "engrais",
+                "order": 0,
+            },
+            {
+                "key": "produits-phytosanitaires",
+                "title": "Vente de produits phytosanitaires",
+                "tagline": "Protéger vos cultures, en toute conformité.",
+                "image": "https://images.pexels.com/photos/37965300/pexels-photo-37965300.jpeg?auto=compress&cs=tinysrgb&w=1400",
+                "teaser": "Herbicides, insecticides et fongicides homologués et conformes aux normes phytosanitaires en vigueur, pour la protection des cultures et la sécurité des opérateurs.",
+                "intro": "STMP Agri distribue des solutions phytosanitaires — herbicides, insecticides et fongicides — homologuées et conformes aux réglementations du Comité Sanitaire Phytosanitaire.\nNous accompagnons les producteurs par des formations aux bonnes pratiques d'application, afin de garantir l'efficacité des traitements tout en préservant la santé des opérateurs et l'environnement.",
+                "features": [
+                    "Herbicides sélectifs et totaux homologués",
+                    "Insecticides systémiques, de contact et biologiques",
+                    "Fongicides préventifs et curatifs",
+                    "Conformité stricte aux normes CSP",
+                    "Formation aux bonnes pratiques d'application",
+                ],
+                "related_category": "herbicides",
+                "order": 1,
+            },
+            {
+                "key": "agroalimentaire",
+                "title": "Distribution de produits agroalimentaires",
+                "tagline": "De la valorisation à la distribution.",
+                "image": "https://images.unsplash.com/photo-1651525669944-00de65d3b8a5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmb29kJTIwcHJvY2Vzc2luZyUyMGFncm8lMjBpbmR1c3RyeXxlbnwwfHx8fDE3ODM5NTU4OTh8MA&ixlib=rb-4.1.0&q=85",
+                "teaser": "STMP Agri accompagne la filière agroalimentaire avec des solutions logistiques adaptées et un réseau de distribution étendu sur toute la sous-région.",
+                "intro": "STMP Agri intervient sur l'ensemble de la chaîne agroalimentaire : valorisation, conditionnement et distribution de produits agricoles vers les marchés locaux et régionaux.\nNous contribuons à créer de la valeur ajoutée locale tout en respectant les standards de sécurité sanitaire (HACCP) et de traçabilité.",
+                "features": [
+                    "Valorisation et transformation des productions agricoles",
+                    "Conditionnement adapté aux circuits B2B",
+                    "Distribution vers les marchés régionaux et sous-régionaux",
+                    "Maîtrise de la sécurité sanitaire (HACCP)",
+                    "Partenariats avec coopératives et industriels",
+                ],
+                "order": 2,
+            },
+            {
+                "key": "transport-marchandises",
+                "title": "Transport de marchandises",
+                "tagline": "Une logistique maîtrisée, du départ à la livraison.",
+                "image": "https://images.unsplash.com/photo-1670509295484-df0c2512fec4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxjb21tZXJjaWFsJTIwdHJhbnNwb3J0JTIwdHJ1Y2slMjBoaWdod2F5fGVufDB8fHx8MTc4Mzk1NTg4M3ww&ixlib=rb-4.1.0&q=85",
+                "teaser": "Notre flotte et notre réseau de partenaires assurent le transport routier national et international, le stockage et le suivi de vos marchandises, en toute sécurité.",
+                "intro": "Notre offre logistique combine transport routier national et international, stockage et suivi de vos marchandises.\nNous garantissons le respect strict des délais et la sécurité des opérations, quel que soit le volume, la destination ou le type de fret.",
+                "features": [
+                    "Transport routier national et international",
+                    "Solutions de stockage et d'entreposage sécurisé",
+                    "Suivi et traçabilité des marchandises en temps réel",
+                    "Logistique multimodale (port, route)",
+                    "Flotte propre et réseau de partenaires certifiés",
+                ],
+                "order": 3,
+            },
+            {
+                "key": "commerce-general",
+                "title": "Commerce général",
+                "tagline": "Un partenaire de confiance pour vos achats et ventes.",
+                "image": "https://images.unsplash.com/photo-1678182451047-196f22a4143e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwzfHxjYXJnbyUyMHNoaXAlMjBjb250YWluZXJzJTIwcG9ydHxlbnwwfHx8fDE3ODM5NTU4ODR8MA&ixlib=rb-4.1.0&q=85",
+                "teaser": "Import-export, sourcing et distribution de biens et services pour les secteurs public et privé, avec réactivité et transparence.",
+                "intro": "Au-delà de l'agriculture, STMP Agri assure l'approvisionnement, le sourcing et la distribution de biens et services pour les secteurs public et privé.\nNotre expertise commerciale et notre réseau international nous permettent de répondre à des besoins variés, avec réactivité, transparence et compétitivité.",
+                "features": [
+                    "Distribution de biens et services multi-secteurs",
+                    "Approvisionnement pour le secteur public et privé",
+                    "Négoce et sourcing international",
+                    "Réactivité et transparence commerciale",
+                    "Accompagnement personnalisé de chaque client",
+                ],
+                "order": 4,
+            },
+        ]
+        await db.activities.insert_many([Activity(**a).model_dump() for a in seed_activities])
     if await db.site_stats.find_one({"_id": "singleton"}) is None:
         await db.site_stats.insert_one({"_id": "singleton", **SEED_STATS})
 
@@ -1323,6 +1616,8 @@ async def startup():
     await db.pages.create_index("slug", unique=True, sparse=True)
     await db.media.create_index([("section", 1), ("created_at", -1)])
     await db.media.create_index("url")
+    await db.activities.create_index("key", unique=True, sparse=True)
+    await db.activities.create_index([("parent_id", 1), ("order", 1)])
     await seed_admin()
     await seed_content()
     try:

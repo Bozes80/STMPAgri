@@ -40,6 +40,8 @@ import PageEditor from "@/pages/admin/PageEditor";
 import AdminMenus from "@/pages/admin/AdminMenus";
 import AdminMedia from "@/pages/admin/AdminMedia";
 import AdminSocials from "@/pages/admin/AdminSocials";
+import AdminActivities from "@/pages/admin/AdminActivities";
+import ActivityEditor from "@/pages/admin/ActivityEditor";
 
 function App() {
   return (
@@ -83,6 +85,9 @@ function App() {
                 <Route path="menus" element={<AdminMenus />} />
                 <Route path="medias" element={<AdminMedia />} />
                 <Route path="reseaux" element={<AdminSocials />} />
+                <Route path="activites" element={<AdminActivities />} />
+                <Route path="activites/nouveau" element={<ActivityEditor />} />
+                <Route path="activites/:id" element={<ActivityEditor />} />
                 <Route path="produits" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="articles" element={<AdminArticles />} />

@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend E2E validation of the new Activities CRUD admin (/admin/activites + /admin/activites/nouveau + /admin/activites/:id) and public /activites integration. All 13 acceptance criteria verified successfully.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminActivities.jsx (~243 lines): clean tree builder (toTree) with 2-level flattening, dnd-kit reorder scoped to same parent_id family — backend receives {items:[{id,parent_id,order}]}. Optimistic UX via query invalidation. No issues.",
+    "ActivityEditor.jsx (~448 lines, borderline): 3-tab layout, features drag & drop via crypto.randomUUID, MediaPicker with defaultSection='content'. Consider splitting FeatureRow + Media tab into sub-components if file grows further, but currently manageable.",
+    "Minor testid inconsistency: feature row testids are 'activity-feature-row-{id}' (no 'admin-' prefix) while the request spec listed 'admin-activity-feature-row-{fid}'. Container/list testids do use the 'admin-' prefix (admin-activity-features-list/add/empty). Not blocking but could be aligned for consistency.",
+    "Preview button uses <Button asChild><Link/></Button> — Radix forwards data-testid to the underlying <a>. Selectors of form '[data-testid=admin-activity-preview-X] a' will not match; use the testid directly on the <a>.",
+    "parentOptions filters allActivities by !parent_id and id !== current — this correctly prevents multi-level nesting in the UI (subs cannot be chosen as parents). Verified in test."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "test_credentials": "admin@stmpagri.ci / StmpAgri2025!",
+  "seed_data_creation": "Created 2 TEST_ activities (TEST_Formation agricole = root, TEST_Sous rubrique engrais = child of achat-vente-engrais). Both deleted at end via UI. Achat-vente-engrais tagline modified for persistence test then restored to original value 'NPK, Urée, KCL, Kieserite : la nutrition qui booste vos rendements.' Final DB state: 5 seeded activities intact, no test residue.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Fully validated flows (Playwright): 1) Sidebar Activités link → /admin/activites. 2) List renders 5 seeded activities with correct titles + slugs (achat-vente-engrais, produits-phytosanitaires, agroalimentaire, transport-marchandises, commerce-general). 3) Editor 3 tabs (Général/Contenu/Médias) all reachable. 4) Create TEST_Formation agricole → auto slug 'test-formation-agricole' shown readonly, redirects to /admin/activites/{id}. 5) Public /activites and /activites/test-formation-agricole show new activity immediately (query invalidation OK). 6) Edit engrais tagline persists after reload. 7) Slug immuable — no input[name=key] rendered in editor. 8) Sub-rubrique creation via parent Select, displayed indented (padding-left 44px) in admin, listed on parent /activites/achat-vente-engrais page (child sub-catégorie), child page has activite-back-parent link. 9) Multi-level nesting prevention verified — subs are excluded from parent Select options. 10) Toggle actif switches badge 'Masquée' and hides from public listing. 11) AlertDialog delete flow works and detaches children per copy. 12) Aperçu button = <a target='_blank' href='/activites/{key}'>. 13) MediaPicker/CoverImage/Gallery fields rendered in Médias tab (icon library button + inputs present with correct testids). Feature is production-ready."
+}
