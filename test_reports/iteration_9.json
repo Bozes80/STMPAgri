@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend E2E testing of the new admin-managed home page (/admin/accueil) with 3 editable sections (Hero, About, Stats). All 8 test scenarios PASSED: security redirect, sidebar item, 3 cards rendering with independent Save buttons, hero edit + public sync, about edit + public sync (multi-paragraph text split by newlines), stats edit + public sync (60+ / 20), section isolation (hero save doesn't wipe about), and persistence after refresh. Original values restored at the end via UI as required (hero title, about eyebrow/title, stats 45/12/350/10). Note: initial stats before restoration were partners=45, countries=12, clients=380, years=4 — cleanup pushed them to the values specified in the request (350 / 10).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminHome.jsx invalidates queryKey ['stats'] after saving stats — good, Home Stats section uses that same key so it refetches automatically. Verified end-to-end.",
+    "Home About component correctly hides when about.text is empty (return null), avoiding an empty section.",
+    "Minor: initial stats in DB had years=4 and clients=380 (before cleanup); the request said original should be 350/10. Values are now restored to the requested originals (45/12/350/10). Main agent may want to seed those as canonical defaults on fresh installs."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (per request)", "frontend": "100%"},
+  "test_credentials": "admin@stmpagri.ci / StmpAgri2025! (used, works)",
+  "seed_data_creation": "None. Only edited home content via admin UI; restored to original values (hero title, about eyebrow='À propos', about title='STMP Agri, un partenaire ivoirien de confiance', stats 45/12/350/10).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Admin Home page fully functional. Testids used: admin-home-page, admin-home-preview, admin-home-hero-card/save/title/subtitle, admin-home-about-card/save/eyebrow/title/text, admin-home-stats-card/save, admin-home-stat-{partners|countries|clients|years}. Public sync uses queryKey 'public-home' (60s staleTime) and 'stats' — both invalidated on save. Section isolation confirmed: PATCH /api/admin/home with partial body preserves untouched sections."
+}

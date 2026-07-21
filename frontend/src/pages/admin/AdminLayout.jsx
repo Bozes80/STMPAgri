@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Tag, FileEdit, ListOrdered, Newspaper, Building2, ShieldCheck,
-  Handshake, Mail, FileText, Send, LogOut, ExternalLink, Menu, X, Images, Share2, Layers,
+  Handshake, Mail, FileText, Send, LogOut, ExternalLink, Menu, X, Images, Share2, Layers, Home,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
   { to: "/admin", label: "Tableau de bord", icon: LayoutDashboard, end: true },
+  { to: "/admin/accueil", label: "Page d'accueil", icon: Home },
   { to: "/admin/pages", label: "Pages", icon: FileEdit },
   { to: "/admin/menus", label: "Menus", icon: ListOrdered },
   { to: "/admin/activites", label: "Activités", icon: Layers },

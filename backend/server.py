@@ -475,6 +475,71 @@ async def public_stats():
         return {"partners": 45, "countries": 12, "clients": 350, "years": 10}
     return {k: v for k, v in stats.items() if k != "_id"}
 
+@api_router.patch("/admin/stats")
+async def update_stats(body: dict, user: dict = Depends(get_current_user)):
+    """Met à jour les 4 chiffres clés (partners, countries, clients, years)."""
+    allowed = {"partners", "countries", "clients", "years"}
+    updates = {}
+    for k, v in (body or {}).items():
+        if k in allowed:
+            try:
+                updates[k] = int(v)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail=f"Le champ '{k}' doit être un entier.")
+    if not updates:
+        raise HTTPException(status_code=400, detail="Aucun champ modifiable fourni.")
+    await db.site_stats.update_one({"_id": "singleton"}, {"$set": updates}, upsert=True)
+    doc = await db.site_stats.find_one({"_id": "singleton"})
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+# ------------------------------------------------------------------ Home content (Hero + À propos)
+DEFAULT_HOME = {
+    "hero": {
+        "title": "Des solutions intégrées pour l'agriculture, la logistique et le commerce international.",
+        "subtitle": "STMP Agri accompagne les producteurs, les entreprises et les institutions avec des solutions fiables en approvisionnement agricole, transport de marchandises, import-export et commerce général.",
+        "background_image": "",
+    },
+    "about": {
+        "eyebrow": "À propos",
+        "title": "STMP Agri, un partenaire ivoirien de confiance",
+        "text": "STMP Agri est une entreprise ivoirienne spécialisée dans l'agriculture, l'import-export, la vente d'engrais et de produits phytosanitaires, le transport de marchandises et l'agro-industrie.\nDepuis notre siège à Abidjan, nous accompagnons les producteurs, entreprises et institutions publiques avec des solutions intégrées, fiables et compétitives, en Côte d'Ivoire et dans toute la sous-région.",
+        "image": "",
+    },
+}
+
+@api_router.get("/home")
+async def get_home_public():
+    doc = await db.home_content.find_one({"_id": "singleton"}, {"_id": 0})
+    if not doc:
+        return DEFAULT_HOME
+    # Fusion défensive avec les défauts (au cas où de nouveaux champs sont ajoutés)
+    return {
+        "hero":  {**DEFAULT_HOME["hero"],  **(doc.get("hero")  or {})},
+        "about": {**DEFAULT_HOME["about"], **(doc.get("about") or {})},
+    }
+
+@api_router.patch("/admin/home")
+async def update_home(body: dict, user: dict = Depends(get_current_user)):
+    """Met à jour partiellement le contenu de la page d'accueil.
+    Body: {hero?: {title, subtitle, background_image}, about?: {eyebrow, title, text, image}}"""
+    current = await db.home_content.find_one({"_id": "singleton"}) or {}
+    merged = {
+        "hero":  {**DEFAULT_HOME["hero"],  **(current.get("hero")  or {})},
+        "about": {**DEFAULT_HOME["about"], **(current.get("about") or {})},
+    }
+    if "hero" in body and isinstance(body["hero"], dict):
+        for k in ("title", "subtitle", "background_image"):
+            if k in body["hero"]:
+                merged["hero"][k] = str(body["hero"][k] or "")
+    if "about" in body and isinstance(body["about"], dict):
+        for k in ("eyebrow", "title", "text", "image"):
+            if k in body["about"]:
+                merged["about"][k] = str(body["about"][k] or "")
+    merged["updated_at"] = now_iso()
+    await db.home_content.update_one({"_id": "singleton"}, {"$set": merged}, upsert=True)
+    merged.pop("_id", None)
+    return merged
+
 # ------------------------------------------------------------------ Public submissions
 @api_router.post("/contact")
 async def create_contact(payload: ContactInput):

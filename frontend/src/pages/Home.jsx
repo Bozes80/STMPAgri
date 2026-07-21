@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, FileText, Globe2, Users, Award, CalendarClock, CheckCircle2, MoveUpRight } from "lucide-react";
+import { ArrowRight, FileText, Globe2, Users, Award, CalendarClock, CheckCircle2, MoveUpRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -12,6 +12,8 @@ import ProductCard from "@/components/ProductCard";
 import ArticleCard from "@/components/ArticleCard";
 import api from "@/lib/api";
 import { SERVICES, WHY_US, IMAGES, COMPANY } from "@/lib/constants";
+import { resolveImageUrl } from "@/lib/media";
+import { useHome } from "@/hooks/useHome";
 import heroImg from "@/assets/hero.webp";
 
 const ACTIVITIES = [
@@ -53,10 +55,16 @@ const ACTIVITIES = [
 ];
 
 function Hero() {
+  const { home } = useHome();
+  const heroData = home?.hero || {};
+  const bgSrc = heroData.background_image ? resolveImageUrl(heroData.background_image) : heroImg;
+  const title = heroData.title || "Des solutions intégrées pour l'agriculture, la logistique et le commerce international.";
+  const subtitle = heroData.subtitle || "STMP Agri accompagne les producteurs, les entreprises et les institutions avec des solutions fiables en approvisionnement agricole, transport de marchandises, import-export et commerce général.";
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroImg} alt="Agriculture, logistique et commerce international — STMP Agri" className="h-full w-full object-cover" />
+        <img src={bgSrc} alt="" className="h-full w-full object-cover"
+          onError={(e) => { e.currentTarget.src = heroImg; }} />
         <div className="absolute inset-0 bg-gradient-to-r from-[#08160c]/90 via-[#0b1f10]/75 to-[#0E7A3A]/30" />
       </div>
 
@@ -74,13 +82,12 @@ function Hero() {
             </span>
           </div>
 
-          <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] text-white">
-            Des solutions intégrées pour l'agriculture, la logistique et le commerce international.
+          <h1 data-testid="hero-title" className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] text-white">
+            {title}
           </h1>
 
-          <p className="mt-6 text-lg text-white/80 max-w-2xl leading-relaxed">
-            STMP Agri accompagne les producteurs, les entreprises et les institutions avec des solutions fiables en
-            approvisionnement agricole, transport de marchandises, import-export et commerce général.
+          <p data-testid="hero-subtitle" className="mt-6 text-lg text-white/80 max-w-2xl leading-relaxed whitespace-pre-line">
+            {subtitle}
           </p>
 
           <div className="mt-9 flex flex-wrap gap-4">
@@ -115,6 +122,48 @@ function Hero() {
             ))}
           </div>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function About() {
+  const { home } = useHome();
+  const a = home?.about;
+  if (!a || !(a.text || "").trim()) return null;
+  const paragraphs = (a.text || "").split("\n").filter((p) => p.trim());
+  const hasImage = !!a.image;
+  return (
+    <section id="apropos" data-testid="home-about-section" className="py-24 bg-background border-y border-border">
+      <div className="container-stmp">
+        <Reveal>
+          <div className={`grid gap-12 items-center ${hasImage ? "lg:grid-cols-2" : ""}`}>
+            <div>
+              <SectionHeading eyebrow={a.eyebrow || "À propos"} title={a.title || "STMP Agri"} />
+              <div className="mt-6 space-y-4 max-w-2xl">
+                {paragraphs.map((p, i) => (
+                  <p key={i} className="text-muted-foreground leading-relaxed">{p}</p>
+                ))}
+              </div>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Button asChild variant="outline" className="border-[#0E7A3A]/30 text-[#0E7A3A] hover:bg-[#0E7A3A]/5">
+                  <Link to="/metiers" data-testid="home-about-metiers-btn">
+                    Découvrir nos métiers <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            {hasImage && (
+              <div className="relative">
+                <div className="aspect-[5/4] rounded-3xl overflow-hidden border border-border shadow-lg">
+                  <img src={resolveImageUrl(a.image)} alt="" className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.parentElement.style.display = "none"; }} />
+                </div>
+                <div className="absolute -bottom-4 -left-4 hidden md:block h-24 w-24 rounded-2xl bg-[#F2D400]/30 -z-10" />
+              </div>
+            )}
+          </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -439,6 +488,7 @@ export default function Home() {
     <>
       <Hero />
       <Metiers />
+      <About />
       <Activities />
       <WhyUs />
       <Stats />
