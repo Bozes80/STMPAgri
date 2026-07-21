@@ -120,6 +120,13 @@ commerce général. Slogan : « Nourrir nos terres pour nourrir l'Afrique ».
   - Éditeur `/admin/activites/nouveau` et `/admin/activites/:id` avec 3 onglets : **Général** (Titre, Tagline, Hiérarchie, Catégorie liée, Actif) / **Contenu** (Teaser, Intro, features triables `@dnd-kit`) / **Médias** (icône via `MediaPickerDialog`, image principale via `CoverImageField`, galerie via `GalleryField`).
   - **Frontend public dynamique** — nouveau hook `useActivities()` + `useActivityByKey(key)` (React Query 60s). Pages `/activites` et `/activites/:key` lisent l'API ; la fiche affiche breadcrumb parent, features, section **Nos sous-catégories** (si children), galerie, CTA devis/produits liés, autres activités en sidebar.
   - Testé end-to-end : **100 % backend (24/24 nouveaux tests + 134/134 régression) + 100 % frontend (13/13 flux via testing_agent_v3_fork : sidebar, liste seedée, création new, redirection, slug auto, apparition immédiate côté public, édition, drag features, slug immutable, création sous-rubrique visible sur parent + breadcrumb, blocage 3ème niveau, toggle actif, suppression avec détachement children, aperçu, MediaPicker).**
+- **Page d'accueil administrable — juil. 2026** :
+  - Nouvelle collection MongoDB `home_content` (singleton) + endpoints : `GET /api/home` (public, avec fallback aux défauts), `PATCH /api/admin/home` (partial update `hero` et/ou `about`), `PATCH /api/admin/stats` (partial update des 4 chiffres partners/countries/clients/years, validation entiers positifs).
+  - Nouvelle page admin `/admin/accueil` (icône Home dans sidebar, 2ᵉ item) avec 3 cartes indépendantes (chacune son bouton « Enregistrer ») : **Section Héros** (titre, sous-titre, image de fond via `CoverImageField`) / **Section À propos** (eyebrow, titre, texte multi-paragraphes, image d'illustration) / **Chiffres clés** (4 inputs numériques : Partenaires, Pays, Clients, Années).
+  - **Nouvelle section publique « À propos »** dans la Home entre Métiers et Activités (rendue conditionnellement si texte fourni), avec layout 2-col optionnel si image, paragraphes séparés par sauts de ligne.
+  - `Hero` de la Home consomme désormais `useHome()` — titre, sous-titre et image de fond dynamiques (fallback graceful sur défauts si non défini).
+  - Isolement des sections : PATCH sur `hero` seulement ne touche pas `about` (et vice-versa) grâce à un merge défensif côté backend.
+  - Testé end-to-end : **100 % backend (10/10 nouveaux tests + 144/144 régression) + 100 % frontend (8/8 flux via testing_agent_v3_fork : sécurité redirect, sidebar, 3 cartes indépendantes, hero sync public, about multi-paragraphes sync, stats sync, isolement, persistance après refresh).**
 
 ## Implémenté (mise à jour fév. 2026 - suite)
 
