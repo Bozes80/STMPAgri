@@ -42,6 +42,7 @@ import AdminMedia from "@/pages/admin/AdminMedia";
 import AdminSocials from "@/pages/admin/AdminSocials";
 import AdminActivities from "@/pages/admin/AdminActivities";
 import AdminHome from "@/pages/admin/AdminHome";
+import AdminAppearance from "@/pages/admin/AdminAppearance";
 import ActivityEditor from "@/pages/admin/ActivityEditor";
 
 function App() {
@@ -90,6 +91,7 @@ function App() {
                 <Route path="activites/nouveau" element={<ActivityEditor />} />
                 <Route path="activites/:id" element={<ActivityEditor />} />
                 <Route path="accueil" element={<AdminHome />} />
+                <Route path="apparence" element={<AdminAppearance />} />
                 <Route path="produits" element={<AdminProducts />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="articles" element={<AdminArticles />} />

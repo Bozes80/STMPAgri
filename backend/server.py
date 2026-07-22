@@ -540,6 +540,70 @@ async def update_home(body: dict, user: dict = Depends(get_current_user)):
     merged.pop("_id", None)
     return merged
 
+# ------------------------------------------------------------------ Site settings (Header + Footer)
+DEFAULT_SETTINGS = {
+    "header": {
+        "logo_url": "",
+        "background_image": "",
+        "background_color": "",
+    },
+    "footer": {
+        "logo_url": "",
+        "background_image": "",
+        "background_color": "#111C15",
+        "address": "Treichville, Avenue 21, Rue 12 - Face de Cacomiaf, Abidjan, Côte d'Ivoire",
+        "phone_fixed": "+225 27 21 34 26 74",
+        "phone_mobile": "+225 07 07 07 07 07",
+        "email": "contact@stmpagri.ci",
+        "hours": "Lun–Ven : 08h–18h",
+    },
+}
+
+def _color_valid(c: str) -> bool:
+    if not c:
+        return True
+    return bool(re.match(r"^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$", c))
+
+@api_router.get("/site-settings")
+async def get_site_settings_public():
+    doc = await db.site_settings.find_one({"_id": "singleton"}, {"_id": 0})
+    if not doc:
+        return DEFAULT_SETTINGS
+    return {
+        "header": {**DEFAULT_SETTINGS["header"], **(doc.get("header") or {})},
+        "footer": {**DEFAULT_SETTINGS["footer"], **(doc.get("footer") or {})},
+    }
+
+@api_router.patch("/admin/site-settings")
+async def update_site_settings(body: dict, user: dict = Depends(get_current_user)):
+    """Met à jour partiellement les paramètres Header/Footer.
+    Body: {header?: {...}, footer?: {...}}"""
+    current = await db.site_settings.find_one({"_id": "singleton"}) or {}
+    merged = {
+        "header": {**DEFAULT_SETTINGS["header"], **(current.get("header") or {})},
+        "footer": {**DEFAULT_SETTINGS["footer"], **(current.get("footer") or {})},
+    }
+    if "header" in body and isinstance(body["header"], dict):
+        for k in ("logo_url", "background_image", "background_color"):
+            if k in body["header"]:
+                v = str(body["header"][k] or "")
+                if k == "background_color" and not _color_valid(v):
+                    raise HTTPException(status_code=400, detail=f"Couleur invalide : {v}")
+                merged["header"][k] = v
+    if "footer" in body and isinstance(body["footer"], dict):
+        text_fields = ("logo_url", "background_image", "background_color",
+                       "address", "phone_fixed", "phone_mobile", "email", "hours")
+        for k in text_fields:
+            if k in body["footer"]:
+                v = str(body["footer"][k] or "")
+                if k == "background_color" and not _color_valid(v):
+                    raise HTTPException(status_code=400, detail=f"Couleur invalide : {v}")
+                merged["footer"][k] = v
+    merged["updated_at"] = now_iso()
+    await db.site_settings.update_one({"_id": "singleton"}, {"$set": merged}, upsert=True)
+    merged.pop("_id", None)
+    return merged
+
 # ------------------------------------------------------------------ Public submissions
 @api_router.post("/contact")
 async def create_contact(payload: ContactInput):

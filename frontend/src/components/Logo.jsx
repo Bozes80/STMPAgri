@@ -1,22 +1,24 @@
 import logoStmp from "@/assets/logo-stmp.png";
+import { resolveImageUrl } from "@/lib/media";
 
-export function LogoMark({ size = 40, className = "" }) {
+export function LogoMark({ size = 40, className = "", src }) {
   return (
     <img
-      src={logoStmp}
+      src={src ? resolveImageUrl(src) : logoStmp}
       alt="STMP Agri"
       width={size}
       height={size}
       className={className}
       style={{ height: size, width: size, objectFit: "contain" }}
+      onError={(e) => { e.currentTarget.src = logoStmp; }}
     />
   );
 }
 
-export default function Logo({ inverted = false, showTagline = false, size = 40 }) {
+export default function Logo({ inverted = false, showTagline = false, size = 40, src }) {
   return (
     <div className="flex items-center gap-2.5" data-testid="stmp-logo">
-      <LogoMark size={size} />
+      <LogoMark size={size} src={src} />
       <div className="leading-none">
         <div className="font-heading font-extrabold tracking-tight text-[1.35rem]">
           <span className={inverted ? "text-white" : "text-[#0E7A3A] dark:text-white"}>

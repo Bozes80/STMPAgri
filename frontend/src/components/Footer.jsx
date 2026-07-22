@@ -5,16 +5,28 @@ import Newsletter from "@/components/Newsletter";
 import { COMPANY, SERVICES } from "@/lib/constants";
 import { useMenu } from "@/hooks/useMenu";
 import { useSocials } from "@/hooks/useSocials";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { resolveImageUrl } from "@/lib/media";
 
 export default function Footer() {
   const { items: footerItems } = useMenu("footer");
   const { socials } = useSocials();
+  const { settings } = useSiteSettings();
+  const f = settings?.footer || {};
+  const bgColor = f.background_color || "#111C15";
+  const hasBgImage = !!f.background_image;
+  const footerStyle = {
+    backgroundColor: bgColor,
+    ...(hasBgImage ? {
+      backgroundImage: `linear-gradient(${bgColor}CC, ${bgColor}EE), url(${resolveImageUrl(f.background_image)})`,
+      backgroundSize: "cover", backgroundPosition: "center",
+    } : {}),
+  };
   return (
-    <footer className="bg-[#111C15] text-white/80" data-testid="site-footer">
+    <footer className="text-white/80" style={footerStyle} data-testid="site-footer">
       <div className="container-stmp py-16 grid gap-12 md:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Logo inverted size={44} />
+          <Logo inverted size={44} src={f.logo_url} />
           <p className="mt-5 text-sm leading-relaxed text-white/70 max-w-xs">
             {COMPANY.fullName}. Des solutions intégrées pour l'agriculture, la logistique et le commerce international.
           </p>
@@ -81,33 +93,34 @@ export default function Footer() {
         <div>
           <h4 className="font-heading font-semibold text-white mb-5">Contact</h4>
           <ul className="space-y-3 text-sm">
-            <li className="flex gap-3">
+            <li className="flex gap-3" data-testid="footer-address">
               <MapPin className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-              <span>{COMPANY.address}</span>
+              <span>{f.address || COMPANY.address}</span>
             </li>
-            <li className="flex gap-3">
-              <Phone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-              <a href={COMPANY.phoneHref} className="hover:text-[#A8D45A]">{COMPANY.phone}</a>
-            </li>
-            <li className="flex gap-3">
-              <Smartphone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-              <span>
-                {COMPANY.mobiles.map((m, i) => (
-                  <span key={m.href}>
-                    {i > 0 && " / "}
-                    <a href={m.href} className="hover:text-[#A8D45A]">{m.value}</a>
-                  </span>
-                ))}
-              </span>
-            </li>
-            <li className="flex gap-3">
+            {(f.phone_fixed || COMPANY.phone) && (
+              <li className="flex gap-3" data-testid="footer-phone-fixed">
+                <Phone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
+                <a href={`tel:${(f.phone_fixed || COMPANY.phone).replace(/\s+/g, "")}`}
+                  className="hover:text-[#A8D45A]">{f.phone_fixed || COMPANY.phone}</a>
+              </li>
+            )}
+            {f.phone_mobile && (
+              <li className="flex gap-3" data-testid="footer-phone-mobile">
+                <Smartphone className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
+                <a href={`tel:${f.phone_mobile.replace(/\s+/g, "")}`}
+                  className="hover:text-[#A8D45A]">{f.phone_mobile}</a>
+              </li>
+            )}
+            <li className="flex gap-3" data-testid="footer-email">
               <Mail className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-              <a href={`mailto:${COMPANY.email}`} className="hover:text-[#A8D45A]">{COMPANY.email}</a>
+              <a href={`mailto:${f.email || COMPANY.email}`} className="hover:text-[#A8D45A]">{f.email || COMPANY.email}</a>
             </li>
-            <li className="flex gap-3">
-              <Clock className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
-              <span>Lun–Ven : 08h–18h</span>
-            </li>
+            {(f.hours || "Lun–Ven : 08h–18h") && (
+              <li className="flex gap-3" data-testid="footer-hours">
+                <Clock className="h-4 w-4 text-[#A8D45A] shrink-0 mt-0.5" />
+                <span>{f.hours || "Lun–Ven : 08h–18h"}</span>
+              </li>
+            )}
           </ul>
           <div className="mt-6">
             <p className="text-sm font-medium text-white mb-2">Newsletter</p>

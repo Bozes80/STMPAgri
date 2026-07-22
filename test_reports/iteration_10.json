@@ -1,0 +1,19 @@
+{
+  "summary": "Frontend E2E tested Admin Apparence (Header/Footer) page. All 10 flows PASS: sidebar item at 3rd position, /admin/apparence renders 2 cards with independent Save + Voir le site, Header color save + public reflect (#F2D400), Footer color + 5 coordinates save + public reflect, isolation (footer save preserves header), invalid color 'red' returns backend 400 'Couleur invalide : red' toast and form stays open, persistence after reload, unauth redirect to /admin/login, PNG logo upload -> public header /api/files/... src. Defaults restored via PATCH (status 200).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminAppearance uses queryKey 'admin-site-settings' locally but public uses 'public-site-settings'. Both are invalidated on save — OK. Minor: could share a single hook to avoid double-fetch on same GET /site-settings.",
+    "ColorPicker <input type='color'> requires a valid hex; when user hex value is invalid (e.g. 'red'), the swatch falls back to default '#111C15' silently — consider inline hex-format validation UI before save."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (10/10)"},
+  "test_credentials": "admin@stmpagri.ci / StmpAgri2025!",
+  "seed_data_creation": "None. Uploaded 1 PNG logo (removed on restore) and set test values that were reverted to defaults at end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All admin nav testids use diacritic-stripped form: 'admin-nav-apparence-headerfooter'. Public site-header sets inline background-color style ONLY when a color is configured (glass fallback otherwise). Defaults were restored via PATCH /api/admin/site-settings with all header fields empty and footer set to canonical STMP values.",
+  "rca of the issue": "N/A — no issues found."
+}

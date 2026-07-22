@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/sheet";
 import { NAV_LINKS_SECONDARY } from "@/lib/constants";
 import { useMenu } from "@/hooks/useMenu";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { resolveImageUrl } from "@/lib/media";
 
 function toTestId(label) {
   return label
@@ -117,12 +119,24 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { tree } = useMenu("main");
+  const { settings } = useSiteSettings();
+  const headerCfg = settings?.header || {};
+  const hasBgImage = !!headerCfg.background_image;
+  const hasBgColor = !!headerCfg.background_color;
+  const headerStyle = {
+    ...(hasBgColor ? { backgroundColor: headerCfg.background_color } : {}),
+    ...(hasBgImage ? {
+      backgroundImage: `url(${resolveImageUrl(headerCfg.background_image)})`,
+      backgroundSize: "cover", backgroundPosition: "center",
+    } : {}),
+  };
+  const headerClasses = `sticky top-0 z-50 border-b border-border${hasBgImage || hasBgColor ? "" : " glass-header bg-background/80"}`;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border glass-header bg-background/80">
+    <header className={headerClasses} style={headerStyle} data-testid="site-header">
       <div className="container-stmp flex items-center justify-between h-16 md:h-20">
         <Link to="/" aria-label="Accueil STMP Agri" data-testid="header-home-link">
-          <Logo size={40} />
+          <Logo size={40} src={headerCfg.logo_url} />
         </Link>
 
         <DesktopNav tree={tree} />
@@ -147,7 +161,7 @@ export default function Header() {
             <SheetContent side="right" className="w-[300px] sm:w-[360px] overflow-y-auto">
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <div className="mb-8 mt-2">
-                <Logo size={38} />
+                <Logo size={38} src={headerCfg.logo_url} />
               </div>
               <nav className="flex flex-col gap-1">
                 {tree.map((item) => (
